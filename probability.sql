@@ -65,7 +65,7 @@ FROM refgrid_stu
 
 stu_crop_suit_max AS (
  SELECT DISTINCT ON (objectid, cropgroup_no)
-  objectid, stu, MAX(pcarea) AS pcarea, cropgroup_no
+ objectid, stu, MAX(pcarea) AS pcarea, cropgroup_no
 FROM  
  refgrid_stu_suit 
 GROUP BY objectid, cropgroup_no, stu
@@ -95,126 +95,126 @@ INNER JOIN listed_crops ON
 
 soil_probs_slope AS (
 SELECT 
-  soil_typologic_unit_cgms.stu_no, 
-  soil_crop_probability.probability AS slope_prob, 
-  soil_crop_probability.actual_crop_id
+ soil_typologic_unit_cgms.stu_no, 
+ soil_crop_probability.probability AS slope_prob, 
+ soil_crop_probability.actual_crop_id
 FROM 
-  data.rt_dom_slope, 
-  data.rt_limiting_soil_props, 
-  data.soil_typologic_unit_cgms, 
-  data.soil_crop_probability
+ data.rt_dom_slope, 
+ data.rt_limiting_soil_props, 
+ data.soil_typologic_unit_cgms, 
+ data.soil_crop_probability
 WHERE 
-  rt_dom_slope.rt_limiting_soil_props_id = rt_limiting_soil_props.id AND
-  rt_limiting_soil_props.id = soil_crop_probability.rt_soil_props_id AND
-  soil_typologic_unit_cgms.slope1 = rt_dom_slope.id
+ rt_dom_slope.rt_limiting_soil_props_id = rt_limiting_soil_props.id AND
+ rt_limiting_soil_props.id = soil_crop_probability.rt_soil_props_id AND
+ soil_typologic_unit_cgms.slope1 = rt_dom_slope.id
 ),
 
 -- get vs (volume of stones) probabilities
 
 soil_probs_stone AS(
 SELECT 
-  stu_ptrb.stu AS stu_no,
-  soil_crop_probability.probability AS stone_prob, 
-  soil_crop_probability.actual_crop_id
+ stu_ptrb.stu AS stu_no,
+ soil_crop_probability.probability AS stone_prob, 
+ soil_crop_probability.actual_crop_id
 FROM 
-  data.rt_stoniness,
-  data.rt_limiting_soil_props, 
-  data.stu_ptrb,
-  data.soil_crop_probability
+ data.rt_stoniness,
+ data.rt_limiting_soil_props, 
+ data.stu_ptrb,
+ data.soil_crop_probability
 WHERE 
-  rt_stoniness.rt_limiting_soil_props_id = rt_limiting_soil_props.id AND
-  rt_limiting_soil_props.id = soil_crop_probability.rt_soil_props_id AND
-  stu_ptrb.vs = rt_stoniness.stoniness_code
+ rt_stoniness.rt_limiting_soil_props_id = rt_limiting_soil_props.id AND
+ rt_limiting_soil_props.id = soil_crop_probability.rt_soil_props_id AND
+ stu_ptrb.vs = rt_stoniness.stoniness_code
 ),
 
 -- get (roo) rooting depth probabilities
 
 soil_probs_roo AS(
 SELECT 
-  soil_typologic_unit_cgms.stu_no, 
-  soil_crop_probability.probability AS rooting_prob, 
-  soil_crop_probability.actual_crop_id
+ soil_typologic_unit_cgms.stu_no, 
+ soil_crop_probability.probability AS rooting_prob, 
+ soil_crop_probability.actual_crop_id
 FROM 
-  data.rt_rooting_depth,
-  data.rt_limiting_soil_props, 
-  data.soil_typologic_unit_cgms, 
-  data.soil_crop_probability
+ data.rt_rooting_depth,
+ data.rt_limiting_soil_props, 
+ data.soil_typologic_unit_cgms, 
+ data.soil_crop_probability
 WHERE 
-  rt_rooting_depth.rt_limiting_soil_props_id = rt_limiting_soil_props.id AND
-  rt_limiting_soil_props.id = soil_crop_probability.rt_soil_props_id AND
-  soil_typologic_unit_cgms.calculated_rooting_depth = rt_rooting_depth.id
+ rt_rooting_depth.rt_limiting_soil_props_id = rt_limiting_soil_props.id AND
+ rt_limiting_soil_props.id = soil_crop_probability.rt_soil_props_id AND
+ soil_typologic_unit_cgms.calculated_rooting_depth = rt_rooting_depth.id
 ),
 
 -- get (texture) texture probabilities
 
 soil_probs_text AS (
 SELECT 
-  soil_typologic_unit_cgms.stu_no, 
-  soil_crop_probability.probability AS texture_prob, 
-  soil_crop_probability.actual_crop_id
+ soil_typologic_unit_cgms.stu_no, 
+ soil_crop_probability.probability AS texture_prob, 
+ soil_crop_probability.actual_crop_id
 FROM 
-  data.rt_texture,
-  data.rt_limiting_soil_props, 
-  data.soil_typologic_unit_cgms, 
-  data.soil_crop_probability
+ data.rt_texture,
+ data.rt_limiting_soil_props, 
+ data.soil_typologic_unit_cgms, 
+ data.soil_crop_probability
 WHERE 
-  rt_texture.rt_limiting_soil_props_id = rt_limiting_soil_props.id AND
-  rt_limiting_soil_props.id = soil_crop_probability.rt_soil_props_id AND
-  soil_typologic_unit_cgms.text1 = rt_texture.id
+ rt_texture.rt_limiting_soil_props_id = rt_limiting_soil_props.id AND
+ rt_limiting_soil_props.id = soil_crop_probability.rt_soil_props_id AND
+ soil_typologic_unit_cgms.text1 = rt_texture.id
 ),
 
 -- get  alkalinity probabilities
 
 soil_probs_alk AS (
 SELECT 
-  soil_typologic_unit_cgms.stu_no, 
-  soil_crop_probability.probability AS alkalinity_prob, 
-  soil_crop_probability.actual_crop_id
+ soil_typologic_unit_cgms.stu_no, 
+ soil_crop_probability.probability AS alkalinity_prob, 
+ soil_crop_probability.actual_crop_id
 FROM 
-  data.rt_alkalinity,
-  data.rt_limiting_soil_props, 
-  data.soil_typologic_unit_cgms, 
-  data.soil_crop_probability
+ data.rt_alkalinity,
+ data.rt_limiting_soil_props, 
+ data.soil_typologic_unit_cgms, 
+ data.soil_crop_probability
 WHERE 
-  rt_alkalinity.rt_limiting_soil_props_id = rt_limiting_soil_props.id AND
-  rt_limiting_soil_props.id = soil_crop_probability.rt_soil_props_id AND
-  soil_typologic_unit_cgms.alkalinity = rt_alkalinity.alkalinity_code
+ rt_alkalinity.rt_limiting_soil_props_id = rt_limiting_soil_props.id AND
+ rt_limiting_soil_props.id = soil_crop_probability.rt_soil_props_id AND
+ soil_typologic_unit_cgms.alkalinity = rt_alkalinity.alkalinity_code
 ),
 
 -- get  salinity probabilities
 
 soil_probs_sal AS (
 SELECT 
-  soil_typologic_unit_cgms.stu_no, 
-  soil_crop_probability.probability AS salinity_prob, 
-  soil_crop_probability.actual_crop_id
+ soil_typologic_unit_cgms.stu_no, 
+ soil_crop_probability.probability AS salinity_prob, 
+ soil_crop_probability.actual_crop_id
 FROM 
-  data.rt_salinity,
-  data.rt_limiting_soil_props, 
-  data.soil_typologic_unit_cgms, 
-  data.soil_crop_probability
+ data.rt_salinity,
+ data.rt_limiting_soil_props, 
+ data.soil_typologic_unit_cgms, 
+ data.soil_crop_probability
 WHERE 
-  rt_salinity.rt_limiting_soil_props_id = rt_limiting_soil_props.id AND
-  rt_limiting_soil_props.id = soil_crop_probability.rt_soil_props_id AND
-  soil_typologic_unit_cgms.salinity = rt_salinity.salinity_code
+ rt_salinity.rt_limiting_soil_props_id = rt_limiting_soil_props.id AND
+ rt_limiting_soil_props.id = soil_crop_probability.rt_soil_props_id AND
+ soil_typologic_unit_cgms.salinity = rt_salinity.salinity_code
 ),
 
 -- get  drainage class probabilities
 
 soil_probs_drain AS (
 SELECT 
-  soil_typologic_unit_cgms.stu_no, 
-  soil_crop_probability.probability AS drainage_prob,
-  soil_crop_probability.actual_crop_id
+ soil_typologic_unit_cgms.stu_no, 
+ soil_crop_probability.probability AS drainage_prob,
+ soil_crop_probability.actual_crop_id
 FROM 
-  data.rt_drainage,
-  data.rt_limiting_soil_props, 
-  data.soil_typologic_unit_cgms, 
-  data.soil_crop_probability
+ data.rt_drainage,
+ data.rt_limiting_soil_props, 
+ data.soil_typologic_unit_cgms, 
+ data.soil_crop_probability
 WHERE 
-  rt_drainage.rt_limiting_soil_props_id = rt_limiting_soil_props.id AND
-  rt_limiting_soil_props.id = soil_crop_probability.rt_soil_props_id AND
-  soil_typologic_unit_cgms.drainage = rt_drainage.drainage_code
+ rt_drainage.rt_limiting_soil_props_id = rt_limiting_soil_props.id AND
+ rt_limiting_soil_props.id = soil_crop_probability.rt_soil_props_id AND
+ soil_typologic_unit_cgms.drainage = rt_drainage.drainage_code
 ),
 
 -- ------------------------------------------------------------------
@@ -224,12 +224,10 @@ WHERE
 
 -- That is the first big merge. We merge the probabilities for each crop given the soil
 -- conditions on the reference centroid.
-
-soil_probs AS (
+stu_cropid_probs AS (
 SELECT 
- stu_crop_id_listed.stu, 
- stu_crop_id_listed.crop_id, 
- stu_crop_id_listed.objectid, 
+ soil_probs_slope.stu_no AS stu,
+ soil_probs_slope.actual_crop_id AS crop_id, 
  (soil_probs_slope.slope_prob *
  soil_probs_stone.stone_prob *
  soil_probs_roo.rooting_prob * 
@@ -239,25 +237,35 @@ SELECT
  soil_probs_drain.drainage_prob) AS current_soil_prob
  
 FROM 
- stu_crop_id_listed
+ soil_probs_slope
 
- INNER JOIN soil_probs_slope ON stu_crop_id_listed.stu=soil_probs_slope.stu_no AND 
- 		stu_crop_id_listed.crop_id=soil_probs_slope.actual_crop_id
- INNER JOIN soil_probs_stone ON stu_crop_id_listed.stu=soil_probs_stone.stu_no AND 
- 		stu_crop_id_listed.crop_id=soil_probs_stone.actual_crop_id
- INNER JOIN soil_probs_roo ON stu_crop_id_listed.stu=soil_probs_roo.stu_no AND 
- 		stu_crop_id_listed.crop_id=soil_probs_roo.actual_crop_id
- INNER JOIN soil_probs_alk ON stu_crop_id_listed.stu=soil_probs_alk.stu_no AND 
- 		stu_crop_id_listed.crop_id=soil_probs_alk.actual_crop_id
- INNER JOIN soil_probs_sal ON stu_crop_id_listed.stu=soil_probs_sal.stu_no AND 
- 		stu_crop_id_listed.crop_id=soil_probs_sal.actual_crop_id
- INNER JOIN soil_probs_drain ON stu_crop_id_listed.stu=soil_probs_drain.stu_no AND 
- 		stu_crop_id_listed.crop_id=soil_probs_drain.actual_crop_id
- INNER JOIN soil_probs_text ON stu_crop_id_listed.stu=soil_probs_text.stu_no AND 
- 		stu_crop_id_listed.crop_id=soil_probs_text.actual_crop_id
+ INNER JOIN soil_probs_stone ON soil_probs_slope.stu_no=soil_probs_stone.stu_no AND 
+ 		soil_probs_slope.actual_crop_id=soil_probs_stone.actual_crop_id
+ INNER JOIN soil_probs_roo ON soil_probs_slope.stu_no=soil_probs_roo.stu_no AND 
+ 		soil_probs_slope.actual_crop_id=soil_probs_roo.actual_crop_id
+ INNER JOIN soil_probs_alk ON soil_probs_slope.stu_no=soil_probs_alk.stu_no AND 
+ 		soil_probs_slope.actual_crop_id=soil_probs_alk.actual_crop_id
+ INNER JOIN soil_probs_sal ON soil_probs_slope.stu_no=soil_probs_sal.stu_no AND 
+ 		soil_probs_slope.actual_crop_id=soil_probs_sal.actual_crop_id
+ INNER JOIN soil_probs_drain ON soil_probs_slope.stu_no=soil_probs_drain.stu_no AND 
+ 		soil_probs_slope.actual_crop_id=soil_probs_drain.actual_crop_id
+ INNER JOIN soil_probs_text ON soil_probs_slope.stu_no=soil_probs_text.stu_no AND 
+ 		soil_probs_slope.actual_crop_id=soil_probs_text.actual_crop_id
+
 ),
 
--- That is just a reference table, holding the crop that might occur on a single pixel.
+soil_probs AS (
+SELECT 
+ stu_crop_id_listed.stu,
+ stu_crop_id_listed.objectid, 
+ stu_crop_id_listed.crop_id, 
+ stu_cropid_probs.current_soil_prob
+FROM
+ stu_crop_id_listed
+INNER JOIN stu_cropid_probs ON 
+ stu_crop_id_listed.stu = stu_cropid_probs.stu AND
+ stu_crop_id_listed.crop_id = stu_cropid_probs.crop_id
+),
 
 refgrid_crops AS (
  SELECT DISTINCT crop_id, objectid
@@ -266,7 +274,6 @@ GROUP BY objectid, crop_id
 ), 
 
 -- Getting the follow up crop probabilities based on the reference table.
-
 follow_up_probs AS (
 SELECT * 
 FROM
@@ -296,35 +303,15 @@ AND
 -- before.
 
 SELECT 
- stu, 
- objectid, 
- current_crop_id,
- follow_up_crop_id,
- current_soil_prob, 
- follow_up_crop_prob,
- (soil_probs_slope.slope_prob *
- soil_probs_stone.stone_prob *
- soil_probs_roo.rooting_prob * 
- soil_probs_alk.alkalinity_prob *
- soil_probs_sal.salinity_prob *
- soil_probs_text.texture_prob *
- soil_probs_drain.drainage_prob) AS follow_up_soil_prob
- 
+ crop_probs.objectid, 
+ crop_probs.current_crop_id,
+ crop_probs.current_soil_prob, 
+ crop_probs.follow_up_crop_id,
+ crop_probs.follow_up_crop_prob,
+ stu_cropid_probs.current_soil_prob AS follow_up_soil_prob
 FROM 
  crop_probs
-
- INNER JOIN soil_probs_slope ON crop_probs.stu=soil_probs_slope.stu_no AND 
- 		crop_probs.follow_up_crop_id=soil_probs_slope.actual_crop_id
- INNER JOIN soil_probs_stone ON crop_probs.stu=soil_probs_stone.stu_no AND 
- 		crop_probs.follow_up_crop_id=soil_probs_stone.actual_crop_id
- INNER JOIN soil_probs_roo ON crop_probs.stu=soil_probs_roo.stu_no AND 
- 		crop_probs.follow_up_crop_id=soil_probs_roo.actual_crop_id
- INNER JOIN soil_probs_alk ON crop_probs.stu=soil_probs_alk.stu_no AND 
- 		crop_probs.follow_up_crop_id=soil_probs_alk.actual_crop_id
- INNER JOIN soil_probs_sal ON crop_probs.stu=soil_probs_sal.stu_no AND 
- 		crop_probs.follow_up_crop_id=soil_probs_sal.actual_crop_id
- INNER JOIN soil_probs_drain ON crop_probs.stu=soil_probs_drain.stu_no AND 
- 		crop_probs.follow_up_crop_id=soil_probs_drain.actual_crop_id
- INNER JOIN soil_probs_text ON crop_probs.stu=soil_probs_text.stu_no AND 
- 		crop_probs.follow_up_crop_id=soil_probs_text.actual_crop_id;
+INNER JOIN stu_cropid_probs ON
+crop_probs.stu=stu_cropid_probs.stu AND 
+ 		crop_probs.follow_up_crop_id=stu_cropid_probs.crop_id;
 

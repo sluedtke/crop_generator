@@ -303,7 +303,6 @@ AND
 -- before.
 
 SELECT 
- crop_probs.stu, 
  crop_probs.objectid, 
  crop_probs.current_crop_id,
  crop_probs.current_soil_prob, 

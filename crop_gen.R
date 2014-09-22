@@ -1,12 +1,12 @@
 ################################################################################################
 
-#       Filename: crop_gen_functions.R
+#       Filename: crop_gen.R
 
 #       Author: Stefan Lüdtke
 
 #       Created: Wednesday 11 June 2014 22:11:06 CEST
 
-#       Last modified: Friday 29 August 2014 15:28:34 CEST
+#       Last modified: Monday 22 September 2014 17:57:56 CEST
 
 ################################################################################################
 
@@ -16,34 +16,52 @@ rm(list=ls())
 
 ################################################################################################
 library(plyr)
+library(dplyr)
 library(reshape2)
-
-
-library(raster)
-library(zoo)
-library(sp)
-library(rgdal)
+library(foreach)
+library(hydroGOF)
+library(data.table)
 
 ################################################################################################
+source("./crop_gen_functions.R")
+###############################################################################################
 
-# -------------------------- General settings ---------------------------#
-data_path="../data/all_raster/"
 
 # -------------------------- Data import --------------------------------#
 
-test=readOGR(dsn="../data/NUTS_2010_10M_SH/Shape/data/stat_sep/",
-	     layer="NUTS_RG_10M_2010_repro_STAT_LEVL___0_si")
+ts_data=nuts_ts(nuts_id="DE41")
+base_probs=nuts_probs(nuts_id="DE41")
 
-spplot(test)
+years=unique(ts_data$year)
+
+# -------------------------- convert to data.tables ---------------------#
+
+ts_data=as.data.table(ts_data) 
+setkey(ts_data, crop_id, year)
+
+base_probs=as.data.table(base_probs)
+setkey(base_probs, current_crop_id, objectid)
+
+# -----------------------------------------------------------------------#
+
+source("./crop_gen_functions.R")
+temp=crop_distribution(nuts_base_probs=base_probs, nuts_base_ts=ts_data, years=years)
+
+test=group_by(temp, crop_id, year) %>%
+		summarize(., point=n()) %>%
+		group_by(., year) %>%
+		mutate(., ratio=point/sum(point)) %>%
+		inner_join(., ts_data) %>%
+		select(., -point) %>%
+		group_by(., crop_id, year) %>%
+		mutate(., percent_bias=pbias(ratio, value, na.rm=T))
+
+max(test$percent_bias)
 
 
-temp=raster()
-# extent(xmin, xmax, ymin, ymax)
-e=extent(2426378.0132, 6293974.6215, 1528101.2618, 5446513.5222)
-extent(temp)=e
-projection(temp)="+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs"
-res(temp)=1000
 
 
-a=rasterize(test, temp)
+
+
+
 

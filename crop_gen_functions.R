@@ -59,14 +59,36 @@ nuts_ts=function(nuts_id){
 
 # ------------------------  utility functions   ------------------------#
 
+# rescale probs to sum up to one
 rescale_probs=function(vect){
 		vect=vect/sum(vect)
 		return(vect)
 }
 
+# apply the parameter for the soil probability 
+soil_para_call=function(prob, soil_para){
+
+		# the difference that corresponds to fill to 100 %
+		gap=1-prob
+		# compute how much we fill based  the parameter
+		prob=prob+(gap*soil_para)
+		return(prob)
+}
+
+# apply the parameter for the follow up crop  probability 
+follow_up_crop_para_call=function(prob, follow_up_crop_para){
+
+		# the difference that corresponds to fill to 100 %
+		gap=1-prob
+		# compute how much we fill based  the parameter
+		prob=prob+(gap*follow_up_crop_para)
+		return(prob)
+}
+
+
 # ------------------ crop dist functions --------------------------#
 
-nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year){
+nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year, soil_para){
 		
 		## subset the time series for the very first year
 		temp_ts=filter(nuts_base_ts, year==start_year) %>%
@@ -78,15 +100,23 @@ nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year){
 				unique(., by=c("objectid", "current_crop_id")) %>%
 				group_by(., objectid) %>%
 				inner_join(., temp_ts, copy=T) %>%
+
+				# rescale the follow up crop probs
 				mutate(., value=rescale_probs(value)) %>%
+
+				# rescale the current crop soil probs
 				mutate(., current_soil_prob=rescale_probs(current_soil_prob)) %>%
+				mutate(., current_soil_prob=soil_para_call(current_soil_prob, soil_para)) %>%
+
+				# get the joint probability  and rescale
 				mutate(., prob=rescale_probs(current_soil_prob*value)) %>%
 				sample_n(., size=1, weight=prob, replace=F) %>%
 				select(., c(objectid, current_crop_id, year))
 		return(temp)
 }
 
-nuts_crop_cont=function(current_year, current_crop_dist, nuts_base_probs, nuts_base_ts){
+nuts_crop_cont=function(current_year, current_crop_dist, nuts_base_probs, nuts_base_ts,
+						soil_para, follow_up_crop_para){
 
 		## subset the time series for the very first year
 		temp_ts=filter(nuts_base_ts, year==current_year) %>%
@@ -97,24 +127,38 @@ nuts_crop_cont=function(current_year, current_crop_dist, nuts_base_probs, nuts_b
 				select(., c(-current_soil_prob, -year)) %>%
 				inner_join(., temp_ts, copy=T) %>%
 				group_by(., objectid) %>%
+
+				# rescale the time series probs
 				mutate(., value=rescale_probs(value)) %>%
+
+				# rescale the follow up crop probs
 				mutate(., follow_up_crop_prob=rescale_probs(follow_up_crop_prob)) %>%
+				mutate(., follow_up_crop_prob=follow_up_crop_para_call(follow_up_crop_prob, follow_up_crop_para)) %>%
+
+				# rescale the follow up crop soil probs
 				mutate(., follow_up_soil_prob=rescale_probs(follow_up_soil_prob)) %>%
-				mutate(., prob=rescale_probs(follow_up_soil_prob*follow_up_soil_prob*value)) %>%
+				mutate(., follow_up_soil_prob=soil_para_call(follow_up_soil_prob, soil_para)) %>%
+
+				# get the joint probability 
+				mutate(., prob=rescale_probs(follow_up_crop_prob*follow_up_soil_prob*value)) %>%
+
+				# and rescale
 				sample_n(., size=1, weight=prob, replace=F) %>%
+
 				select(., c(objectid, follow_up_crop_id, year)) %>%
 				rename(.,  c("follow_up_crop_id"="current_crop_id"))
 
 		return(temp)
 }
 
-crop_distribution=function(nuts_base_probs, nuts_base_ts, years){
+crop_distribution=function(nuts_base_probs, nuts_base_ts, years, soil_para, follow_up_crop_para){
 
 		# initialize for the first year
 		current_year=years[1]
 		init_crop_dist=nuts_crop_init(nuts_base_probs=nuts_base_probs,
 									  nuts_base_ts=nuts_base_ts,
-									 start_year=current_year)
+									 start_year=current_year,
+									 soil_para=soil_para)
 
 		# save the initialization
 		current_crop_dist=init_crop_dist
@@ -126,7 +170,9 @@ crop_distribution=function(nuts_base_probs, nuts_base_ts, years){
 				current_crop_dist=nuts_crop_cont(current_year,
 												 current_crop_dist=current_crop_dist,
 												 nuts_base_probs=nuts_base_probs,
-												 nuts_base_ts=nuts_base_ts)
+												 nuts_base_ts=nuts_base_ts,
+												 soil_para=soil_para,
+												 follow_up_crop_para=follow_up_crop_para)
 		}
 		
 		temp=rbind(init_crop_dist, temp) %>%
@@ -136,3 +182,6 @@ crop_distribution=function(nuts_base_probs, nuts_base_ts, years){
 		
 }
 # ------------------------------------------------------------------#
+
+
+

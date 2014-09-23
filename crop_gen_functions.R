@@ -57,7 +57,7 @@ nuts_ts=function(nuts_id){
 # ------------------------------------------------------------------#
 
 
-# ------------------------  util function   ------------------------#
+# ------------------------  utility functions   ------------------------#
 
 rescale_probs=function(vect){
 		vect=vect/sum(vect)
@@ -65,7 +65,6 @@ rescale_probs=function(vect){
 }
 
 # ------------------ crop dist functions --------------------------#
-
 
 nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year){
 		
@@ -79,9 +78,10 @@ nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year){
 				unique(., by=c("objectid", "current_crop_id")) %>%
 				group_by(., objectid) %>%
 				inner_join(., temp_ts, copy=T) %>%
+				mutate(., value=rescale_probs(value)) %>%
+				mutate(., current_soil_prob=rescale_probs(current_soil_prob)) %>%
 				mutate(., prob=rescale_probs(current_soil_prob*value)) %>%
-				group_by(., objectid) %>%
-				sample_n(., size=1, weight=prob, replace=T) %>%
+				sample_n(., size=1, weight=prob, replace=F) %>%
 				select(., c(objectid, current_crop_id, year))
 		return(temp)
 }
@@ -92,22 +92,16 @@ nuts_crop_cont=function(current_year, current_crop_dist, nuts_base_probs, nuts_b
 		temp_ts=filter(nuts_base_ts, year==current_year) %>%
 				rename(., c("crop_id"="follow_up_crop_id"))
 
-		# print(current_year)
-		# print(temp_ts)
-		# if(current_year==1995){
-		# 		browser()
-		# }else{}
-        #
 		## distribute the crops for the current year
 		temp=inner_join(current_crop_dist, base_probs) %>%
 				select(., c(-current_soil_prob, -year)) %>%
-				inner_join(., temp_ts, copy=T)# %>%
+				inner_join(., temp_ts, copy=T) %>%
 				group_by(., objectid) %>%
-				summarize(., sum(value))
+				mutate(., value=rescale_probs(value)) %>%
 				mutate(., follow_up_crop_prob=rescale_probs(follow_up_crop_prob)) %>%
 				mutate(., follow_up_soil_prob=rescale_probs(follow_up_soil_prob)) %>%
 				mutate(., prob=rescale_probs(follow_up_soil_prob*follow_up_soil_prob*value)) %>%
-				sample_n(., size=1, weight=prob, replace=T) %>%
+				sample_n(., size=1, weight=prob, replace=F) %>%
 				select(., c(objectid, follow_up_crop_id, year)) %>%
 				rename(.,  c("follow_up_crop_id"="current_crop_id"))
 
@@ -118,8 +112,9 @@ crop_distribution=function(nuts_base_probs, nuts_base_ts, years){
 
 		# initialize for the first year
 		current_year=years[1]
-		init_crop_dist=nuts_crop_init(nuts_base_probs=base_probs, nuts_base_ts=ts_data,
-										 start_year=current_year)
+		init_crop_dist=nuts_crop_init(nuts_base_probs=nuts_base_probs,
+									  nuts_base_ts=nuts_base_ts,
+									 start_year=current_year)
 
 		# save the initialization
 		current_crop_dist=init_crop_dist
@@ -130,8 +125,8 @@ crop_distribution=function(nuts_base_probs, nuts_base_ts, years){
 		temp=foreach(current_year=years, .combine="rbind") %do% {
 				current_crop_dist=nuts_crop_cont(current_year,
 												 current_crop_dist=current_crop_dist,
-												 nuts_base_probs=base_probs,
-												 nuts_base_ts=ts_data)
+												 nuts_base_probs=nuts_base_probs,
+												 nuts_base_ts=nuts_base_ts)
 		}
 		
 		temp=rbind(init_crop_dist, temp) %>%

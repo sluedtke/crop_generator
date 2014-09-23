@@ -11,7 +11,7 @@ listed_crops AS (
 SELECT DISTINCT crop_id
 FROM 
  data.time_series
-WHERE data.time_series.nuts_id='ITI4'
+WHERE data.time_series.nuts_id='DE41'
 ),
 
 -- The first temporary table will hold all ids from the EU reference grid that intersect
@@ -21,10 +21,10 @@ refgrid_nuts AS (
 SELECT 
  euref_grid_points.objectid, euref_grid_points.geom 
 FROM 
- data.euref_grid_points, data.nuts_2010
-WHERE nuts_id = 'ITI4' AND 
- data.euref_grid_points.geom && data.nuts_2010.geom AND
- ST_Intersects(data.euref_grid_points.geom, data.nuts_2010.geom)
+ data.euref_grid_points, data.nuts_2006
+WHERE nuts_id = 'DE41' AND 
+ data.euref_grid_points.geom && data.nuts_2006.geom AND
+ ST_Intersects(data.euref_grid_points.geom, data.nuts_2006.geom)
 ),
 
 -- Again a spatial query. That on returns all soil mapping units (smu) that are covered by
@@ -39,7 +39,7 @@ FROM
  ST_Intersects(data.sgdbe.geom, refgrid_nuts.geom)
 ),
 
--- At very first, we need all stus for each smu, that is the soil topographic unit.
+-- At very first, we need all stu's for each smu, that is the soil topographic unit.
 -- We do a join given by a reference table (smu_stu). 
 
 refgrid_stu AS (
@@ -313,5 +313,7 @@ FROM
  crop_probs
 INNER JOIN stu_cropid_probs ON
 crop_probs.stu=stu_cropid_probs.stu AND 
- 		crop_probs.follow_up_crop_id=stu_cropid_probs.crop_id;
-
+ 		crop_probs.follow_up_crop_id=stu_cropid_probs.crop_id
+ORDER BY 
+ crop_probs.follow_up_crop_prob,
+ stu_cropid_probs.current_soil_prob;

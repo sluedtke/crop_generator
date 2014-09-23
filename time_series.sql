@@ -1,9 +1,9 @@
 ﻿-- This query gives all the time series entries for a given nuts. 
 
-SELECT *
+SELECT value, year, crop_id, data_source
 FROM data.time_series
 WHERE
- nuts_id='DE30' AND
- value IS NOT NULL AND
+ nuts_id = 'ITI4' AND
+ value IS NOT NULL
 ORDER BY crop_id, year;
 

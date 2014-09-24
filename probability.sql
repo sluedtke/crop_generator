@@ -65,7 +65,7 @@ FROM refgrid_stu
 -- link](http://stackoverflow.com/questions/3800551/select-first-row-in-each-group-by-group/7630564#7630564)
 stu_crop_suit_max AS (
 	SELECT DISTINCT ON (objectid, cropgroup_no)
-	smu, objectid, stu, MAX(pcarea) as pcarea, cropgroup_no
+	smu, objectid, stu, pcarea, cropgroup_no
 	FROM refgrid_stu_suit
 	GROUP BY objectid, cropgroup_no, smu, stu, pcarea
 	ORDER BY objectid, cropgroup_no, pcarea DESC

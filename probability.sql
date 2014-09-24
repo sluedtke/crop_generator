@@ -39,7 +39,7 @@ FROM
  ST_Intersects(data.sgdbe.geom, refgrid_nuts.geom)
 ),
 
--- At very first, we need all stus for each smu, that is the soil topographic unit.
+-- At very first, we need all stu's for each smu, that is the soil topographic unit.
 -- We do a join given by a reference table (smu_stu). 
 
 refgrid_stu AS (
@@ -59,17 +59,16 @@ FROM refgrid_stu
 		refgrid_stu.stu=data.suitability_cgms.stu_no
 ),
 
--- Using the stu with the biggest share.
+-- Get crop_groups of stu with biggest share.
+-- If a crop_group is not present at the selected stu, take the next stu with max share for this crop group.
 -- The DISTINCT ON is based on [that
 -- link](http://stackoverflow.com/questions/3800551/select-first-row-in-each-group-by-group/7630564#7630564)
-
 stu_crop_suit_max AS (
- SELECT DISTINCT ON (objectid, cropgroup_no)
- objectid, stu, MAX(pcarea) AS pcarea, cropgroup_no
-FROM  
- refgrid_stu_suit 
-GROUP BY objectid, cropgroup_no, stu
-ORDER BY objectid, cropgroup_no, stu
+	SELECT DISTINCT ON (objectid, cropgroup_no)
+	smu, objectid, stu, pcarea, cropgroup_no
+	FROM refgrid_stu_suit
+	GROUP BY objectid, cropgroup_no, smu, stu, pcarea
+	ORDER BY objectid, cropgroup_no, pcarea DESC
 ),
 
 -- After the crop group, we merge the crop id based on the table crop_to_crop_group.
@@ -313,5 +312,7 @@ FROM
  crop_probs
 INNER JOIN stu_cropid_probs ON
 crop_probs.stu=stu_cropid_probs.stu AND 
- 		crop_probs.follow_up_crop_id=stu_cropid_probs.crop_id;
-
+crop_probs.follow_up_crop_id=stu_cropid_probs.crop_id
+ORDER BY 
+ crop_probs.follow_up_crop_prob,
+ stu_cropid_probs.current_soil_prob;

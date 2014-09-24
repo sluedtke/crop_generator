@@ -124,7 +124,7 @@ nuts_crop_cont=function(current_year, current_crop_dist, nuts_base_probs, nuts_b
 
 
 		## distribute the crops for the current year
-		temp=inner_join(current_crop_dist, base_probs) %>%
+		temp=inner_join(current_crop_dist, nuts_base_probs) %>%
 				select(., c(-current_soil_prob, -year)) %>%
 				
 				# join the time series data

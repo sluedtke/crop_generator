@@ -69,7 +69,7 @@ stu_crop_suit_max AS (
 	FROM refgrid_stu_suit
 	GROUP BY objectid, cropgroup_no, smu, stu, pcarea
 	ORDER BY objectid, cropgroup_no, pcarea DESC
-)
+),
 
 -- After the crop group, we merge the crop id based on the table crop_to_crop_group.
 

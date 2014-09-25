@@ -2,10 +2,18 @@
 -- Join the unique admin units from the time series ot our reference table
 -- If we find that multiple version fit, we take the most recent (max) one
 -- That will be the reference table for the time series.
+WITH 
 
+-- get the relevant nuts that occur in the time series
+unique_nuts AS (
+SELECT DISTINCT nuts_id
+FROM
+ data.time_series)
+
+-- and the version the correspond to
 SELECT nuts_code, MAX(nuts_version_year)
 from data.nuts_version_years
-WHERE
- nuts_code='DE30'
+INNER JOIN unique_nuts ON
+unique_nuts.nuts_id=data.nuts_version_years.nuts_code
 GROUP BY nuts_code;
 

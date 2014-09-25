@@ -22,22 +22,22 @@ library(RODBCext)
 
 # ------------------------  BASIC queries   ------------------------#
 
-nuts_version=function(nuts_id){
+nuts=function(){
 		query=readLines("./nuts_version.sql")
 		query=paste(query, collapse=" \n ")
 
         conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
-		nuts_version=sqlExecute(conn, query, nuts_id, fetch=T)$max
+		nuts_version=sqlExecute(conn, query,fetch=T)
 		odbcClose(conn)
 		return(nuts_version)
 }
 
-nuts_probs=function(nuts_id){
+nuts_probs=function(nuts_info){
 		query=readLines("./probability.sql")
 		query=paste(query, collapse=" \n ")
-		query=gsub("XXXX", nuts_version(nuts_id), query)
+		query=gsub("XXXX", nuts_info$max, query)
 
-		parameters=data.frame(a=nuts_id, b=nuts_id)
+		parameters=data.frame(a=nuts_info$nuts_code, b=nuts_info$nuts_code)
         conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
 		nuts_probs=sqlExecute(conn, query, parameters,  fetch=T)
 		odbcClose(conn)
@@ -67,7 +67,9 @@ rescale_probs=function(vect){
 
 # apply the parameter for the soil probability 
 soil_para_call=function(prob, soil_para){
-
+		
+		## just a conversion to get a better feeling for the parameter
+		soil_para=1-soil_para
 		# the difference that corresponds to fill to 100 %
 		gap=1-prob
 		# compute how much we fill based  the parameter
@@ -78,12 +80,15 @@ soil_para_call=function(prob, soil_para){
 # apply the parameter for the follow up crop  probability 
 follow_up_crop_para_call=function(prob, follow_up_crop_para){
 
+		## just a conversion to get a better feeling for the parameter
+		follow_up_crop_para=1-follow_up_crop_para
 		# the difference that corresponds to fill to 100 %
 		gap=1-prob
 		# compute how much we fill based  the parameter
 		prob=prob+(gap*follow_up_crop_para)
 		return(prob)
 }
+
 
 
 # ------------------ crop dist functions --------------------------#
@@ -95,7 +100,7 @@ nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year, soil_para){
 				rename(., c("crop_id"="current_crop_id"))
 
 		## distribute the crops for the first year
-		temp=subset(nuts_base_probs, nuts_base_probs$current_crop_id %in% temp_ts$current_crop_id) %>%
+		init_crop=subset(nuts_base_probs, nuts_base_probs$current_crop_id %in% temp_ts$current_crop_id) %>%
 				select(., objectid, current_crop_id, current_soil_prob) %>%
 				unique(., by=c("objectid", "current_crop_id")) %>%
 				group_by(., objectid) %>%
@@ -112,23 +117,39 @@ nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year, soil_para){
 				mutate(., prob=rescale_probs(current_soil_prob*value)) %>%
 				sample_n(., size=1, weight=prob, replace=F) %>%
 				select(., c(objectid, current_crop_id, year))
+
+		init_offset=left_join(init_crop, offset_tab, copy=T) %>%
+				select(., objectid, current_crop_id, offset_year) %>%
+				rename(., c("current_crop_id" = "follow_up_crop_id"))
+
+		temp=list(crop_dist=init_crop, crop_offset=init_offset)
 		return(temp)
 }
 
-nuts_crop_cont=function(current_year, current_crop_dist, nuts_base_probs, nuts_base_ts,
+
+nuts_crop_cont=function(current_year, current_crop_dat, nuts_base_probs, nuts_base_ts,
 						soil_para, follow_up_crop_para){
 
 		## subset the time series for the very first year
 		temp_ts=filter(nuts_base_ts, year==current_year) %>%
 				rename(., c("crop_id"="follow_up_crop_id"))
 
+		# get the single items from the list
+		current_crop_dist=current_crop_dat$crop_dist
+		crop_offset=current_crop_dat$crop_offset
+
 
 		## distribute the crops for the current year
-		temp=inner_join(current_crop_dist, base_probs) %>%
-				select(., c(-current_soil_prob, -year)) %>%
-				
+		temp_dist=inner_join(current_crop_dist, base_probs) %>%
+ 				select(., c(-current_soil_prob, -year)) %>%
 				# join the time series data
 				inner_join(., temp_ts, copy=T) %>%
+				# join the offset info
+				left_join(crop_offset, copy=T) %>%
+				# update the probs if offset_year is present
+				mutate_if(., is.na(offset_year)==F, 
+						  value=0, follow_up_crop_prob=0, follow_up_soil_prob=0) %>%
+
 				group_by(., objectid) %>%
 
 				# rescale the time series probs
@@ -147,10 +168,22 @@ nuts_crop_cont=function(current_year, current_crop_dist, nuts_base_probs, nuts_b
 
 				# and rescale
 				sample_n(., size=1, weight=prob, replace=F) %>%
-
-				select(., c(objectid, follow_up_crop_id, year)) %>%
+				
+				# select columns of interest
+				select(.,  c(follow_up_crop_id, objectid, year)) %>%
 				rename(.,  c("follow_up_crop_id"="current_crop_id"))
 
+		# get the most recent cells and crops that must have a break
+		current_crop_offset=left_join(temp_dist, offset_tab, copy=T) %>%
+				select(., objectid, current_crop_id, offset_year) %>%
+				rename(., c("current_crop_id" = "follow_up_crop_id")) %>%
+				rbind(., crop_offset=mutate(crop_offset, offset_year=offset_year-1)) %>%
+				filter(., is.na(offset_year)==F ) %>%
+				filter(., offset_year!=0 )
+
+
+
+		temp=list(crop_dist=temp_dist, crop_offset=current_crop_offset)
 		return(temp)
 }
 
@@ -158,27 +191,31 @@ crop_distribution=function(nuts_base_probs, nuts_base_ts, years, soil_para, foll
 
 		# initialize for the first year
 		current_year=years[1]
-		init_crop_dist=nuts_crop_init(nuts_base_probs=nuts_base_probs,
+		init_crop_dat=nuts_crop_init(nuts_base_probs=nuts_base_probs,
 									  nuts_base_ts=nuts_base_ts,
 									 start_year=current_year,
 									 soil_para=soil_para)
 
 		# save the initialization
-		current_crop_dist=init_crop_dist
+		current_crop_dat=init_crop_dat
 
 		# strip the first entry from years
 		years=years[-1]
 
 		temp=foreach(current_year=years, .combine="rbind") %do% {
-				current_crop_dist=nuts_crop_cont(current_year,
-												 current_crop_dist=current_crop_dist,
-												 nuts_base_probs=nuts_base_probs,
-												 nuts_base_ts=nuts_base_ts,
-												 soil_para=soil_para,
-												 follow_up_crop_para=follow_up_crop_para)
+
+				current_crop_dat=nuts_crop_cont(current_year,
+												current_crop_dat=current_crop_dat,
+												nuts_base_probs=nuts_base_probs,
+												nuts_base_ts=nuts_base_ts,
+												soil_para=soil_para,
+												follow_up_crop_para=follow_up_crop_para)
+
+				current_crop_dist=current_crop_dat$crop_dist
 		}
-		
-		temp=rbind(init_crop_dist, temp) %>%
+
+		# combine with the initialization
+		temp=rbind(init_crop_dat$crop_dist, temp, use.names=T) %>%
 				rename(., c("current_crop_id"="crop_id"))
 
 		return(temp)

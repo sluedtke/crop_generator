@@ -15,6 +15,7 @@ rm(list=ls())
 ################################################################################################
 library(plyr)
 library(dplyr)
+library(dplyrExtras)
 library(reshape2)
 library(foreach)
 library(hydroGOF)
@@ -25,13 +26,19 @@ library(lhs)
 source("./crop_gen_functions.R")
 ###############################################################################################
 
+## Get the list of nuts we want to use
+nuts_info=nuts()
+nuts_info=nuts_info[nuts_info$nuts_code=='DE42', ]
+
 
 # -------------------------- Data import --------------------------------#
-nuts_id='DE42'
-ts_data=nuts_ts(nuts_id)
-base_probs=nuts_probs(nuts_id)
+
+ts_data=nuts_ts(nuts_id=nuts_info$nuts_code)
+base_probs=nuts_probs(nuts_info)
 
 years=unique(ts_data$year)
+
+offset_tab=data.frame(current_crop_id=c(9, 7, 14), offset_year=c(3, 3, 3))
 
 # -------------------------- convert to data.tables ---------------------#
 
@@ -46,7 +53,8 @@ setkey(base_probs, current_crop_id, objectid)
 source("./crop_gen_functions.R")
 
 temp=crop_distribution(nuts_base_probs=base_probs, nuts_base_ts=ts_data,
-					   years=years, soil_para=0, follow_up_crop_para=0)
+					   years=years, soil_para=1, follow_up_crop_para=1)
+
 
 test=group_by(temp, crop_id, year) %>%
 		summarize(., point=n()) %>%
@@ -62,12 +70,5 @@ test=group_by(temp, crop_id, year) %>%
 max(test$percent_bias)
 
 test=group_by(test, year) %>%
-		summarize(., mean=mean(percent_bias)
-
-
-
-
-
-
-
+		summarize(., mean=median(percent_bias))
 

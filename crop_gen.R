@@ -18,7 +18,6 @@ library(dplyr)
 library(dplyrExtras)
 library(reshape2)
 library(foreach)
-library(hydroGOF)
 library(data.table)
 library(lhs)
 library(RODBCext)
@@ -44,7 +43,7 @@ registerDoMPI(cl)
 #  
 foreach(i=c(1:nrow(single_nuts)),
 		.packages=c("RODBCext", "plyr", "dplyr", "dplyrExtras", "reshape2", "foreach",
-					"hydroGOF", "data.table", "lhs")
+					"data.table", "lhs")
 		)%dopar%{
 		
 		#subset the dataframe

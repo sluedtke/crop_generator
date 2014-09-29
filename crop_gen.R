@@ -52,8 +52,12 @@ foreach(i=c(1:nrow(single_nuts)),
 
 		# -------------------------- Data import --------------------------------#
 
-		ts_data=nuts_ts(nuts_id=nuts_info$nuts_code)
-		base_probs=nuts_probs(nuts_info)
+		ts_data=nuts_ts(nuts_id=nuts_info$nuts_code) %>%
+				mutate(., value=as.numeric(as.character(value)))
+
+		base_probs=nuts_probs(nuts_info) %>%
+				mutate(., current_soil_prob=as.numeric(as.character(current_soil_prob))) %>%
+				mutate(., follow_up_soil_prob=as.numeric(as.character(follow_up_soil_prob)))
 
 		years=unique(ts_data$year)
 

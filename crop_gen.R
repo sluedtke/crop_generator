@@ -21,54 +21,64 @@ library(foreach)
 library(hydroGOF)
 library(data.table)
 library(lhs)
+library(RODBCext)
 
-################################################################################################
+############################################################################
 source("./crop_gen_functions.R")
-###############################################################################################
+############################################################################
 
 ## Get the list of nuts we want to use
-nuts_info=nuts()
-nuts_info=nuts_info[nuts_info$nuts_code=='DE42', ]
+nuts_info_all=nuts()
 
 
-# -------------------------- Data import --------------------------------#
 
-ts_data=nuts_ts(nuts_id=nuts_info$nuts_code)
-base_probs=nuts_probs(nuts_info)
+# single_nuts=sample_n(nuts_info_all, 2, replace=F)
+# nuts_info=nuts_info_all[nuts_info_all$nuts_code=='DE42', ]
+single_nuts=nuts_info_all[(nuts_info_all$nuts_code=='DE42' | nuts_info_all$nuts_code=='DE41'), ]
 
-years=unique(ts_data$year)
+mc_runs=1
 
-offset_tab=data.frame(current_crop_id=c(9, 7, 14), offset_year=c(3, 3, 3))
+library(doMPI)
+cl = startMPIcluster()
+registerDoMPI(cl)
+#  
+foreach(i=c(1:nrow(single_nuts)),
+		.packages=c("RODBCext", "plyr", "dplyr", "dplyrExtras", "reshape2", "foreach",
+					"hydroGOF", "data.table", "lhs")
+		)%dopar%{
+		
+		#subset the dataframe
+		nuts_info=single_nuts[i,]
 
-# -------------------------- convert to data.tables ---------------------#
+		# -------------------------- Data import --------------------------------#
 
-ts_data=as.data.table(ts_data) 
-setkey(ts_data, crop_id, year)
+		ts_data=nuts_ts(nuts_id=nuts_info$nuts_code)
+		base_probs=nuts_probs(nuts_info)
 
-base_probs=as.data.table(base_probs)
-setkey(base_probs, current_crop_id, objectid)
+		years=unique(ts_data$year)
 
-# -----------------------------------------------------------------------#
+		offset_tab=data.frame(current_crop_id=c(9, 7, 14), offset_year=c(3, 3, 3))
 
-source("./crop_gen_functions.R")
+		# -------------------------- convert to data.tables ---------------------#
 
-temp=crop_distribution(nuts_base_probs=base_probs, nuts_base_ts=ts_data,
-					   years=years, soil_para=1, follow_up_crop_para=1)
+		ts_data=as.data.table(ts_data) 
+		setkey(ts_data, crop_id, year)
 
+		base_probs=as.data.table(base_probs)
+		setkey(base_probs, current_crop_id, objectid)
 
-test=group_by(temp, crop_id, year) %>%
-		summarize(., point=n()) %>%
-		group_by(., year) %>%
-		mutate(., ratio=point/sum(point)) %>%
-		inner_join(., ts_data) %>%
-		group_by(., year) %>%
-		mutate(., value=rescale_probs(value)) %>%
-		select(., -point) %>%
-		group_by(., year, crop_id) %>%
-		mutate(., percent_bias=pbias(ratio, value, na.rm=T))#%>%
+		# -----------------------------------------------------------------------#
 
-max(test$percent_bias)
+		temp=foreach(run=mc_runs, .combine="rbind")%do%{
 
-test=group_by(test, year) %>%
-		summarize(., mean=median(percent_bias))
+				temp=crop_distribution(nuts_base_probs=base_probs, nuts_base_ts=ts_data,
+								  years=years, soil_para=1, follow_up_crop_para=1)
+				temp$mc_run=run
+				temp=temp
+		}
+
+		upload_data(nuts_info, data=temp)
+}
+
+closeCluster(cl)
 

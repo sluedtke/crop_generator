@@ -13,10 +13,11 @@
 #	Outsource the function for the probabilistic crop generator
 
 ################################################################################################
-# setting variables to access the DB
-# RODBCext must be configured properly!!!
 
-library(RODBCext)
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# RODBCext must be configured properly!!!
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ################################################################################################
 
@@ -27,10 +28,12 @@ nuts=function(){
 		query=paste(query, collapse=" \n ")
 
         conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
-		nuts_version=sqlExecute(conn, query,fetch=T)
+		nuts_version=sqlExecute(conn, query, fetch=T)
 		odbcClose(conn)
 		return(nuts_version)
 }
+
+# ------------------------------------- #
 
 nuts_probs=function(nuts_info){
 		query=readLines("./probability.sql")
@@ -44,18 +47,37 @@ nuts_probs=function(nuts_info){
 		return(nuts_probs)
 }
 
+# ------------------------------------- #
+
 nuts_ts=function(nuts_id){
 		query=readLines("./time_series.sql")
 		query=paste(query, collapse=" \n ")
-
         conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
 		nuts_ts=sqlExecute(conn, query, nuts_id,  fetch=T)
 		odbcClose(conn)
 		return(nuts_ts)
 }
 
-# ------------------------------------------------------------------#
+# ------------------------------------- #
 
+upload_data=function(nuts_info, data){
+
+		# create the table name first
+		tab_name=data.frame(tab_name=as.character(paste0('tmp.', 
+						 paste("tab", nuts_info, sep="_", collapse="_"))))
+
+        conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
+		## drop table if exists
+		query=paste0('DROP TABLE IF EXISTS ', tab_name$tab_name, ';')
+		sqlExecute(conn, query, NULL, fetch=F)
+
+		# save table 
+		sqlSave(conn, dat=data, tablename=tab_name, addPK=T, fast=T, safer=F)
+		odbcClose(conn)
+}
+
+
+# ------------------------------------------------------------------#
 
 # ------------------------  utility functions   ------------------------#
 
@@ -64,6 +86,8 @@ rescale_probs=function(vect){
 		vect=vect/sum(vect)
 		return(vect)
 }
+
+# ------------------------------------- #
 
 # apply the parameter for the soil probability 
 soil_para_call=function(prob, soil_para){
@@ -77,6 +101,8 @@ soil_para_call=function(prob, soil_para){
 		return(prob)
 }
 
+# ------------------------------------- #
+
 # apply the parameter for the follow up crop  probability 
 follow_up_crop_para_call=function(prob, follow_up_crop_para){
 
@@ -88,8 +114,6 @@ follow_up_crop_para_call=function(prob, follow_up_crop_para){
 		prob=prob+(gap*follow_up_crop_para)
 		return(prob)
 }
-
-
 
 # ------------------ crop dist functions --------------------------#
 
@@ -126,6 +150,7 @@ nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year, soil_para){
 		return(temp)
 }
 
+# ------------------------------------- #
 
 nuts_crop_cont=function(current_year, current_crop_dat, nuts_base_probs, nuts_base_ts,
 						soil_para, follow_up_crop_para){
@@ -187,6 +212,8 @@ nuts_crop_cont=function(current_year, current_crop_dat, nuts_base_probs, nuts_ba
 		return(temp)
 }
 
+# ------------------------------------- #
+
 crop_distribution=function(nuts_base_probs, nuts_base_ts, years, soil_para, follow_up_crop_para){
 
 		# initialize for the first year
@@ -221,7 +248,7 @@ crop_distribution=function(nuts_base_probs, nuts_base_ts, years, soil_para, foll
 		return(temp)
 		
 }
+
 # ------------------------------------------------------------------#
-
-
+# ------------------------------------------------------------------#
 

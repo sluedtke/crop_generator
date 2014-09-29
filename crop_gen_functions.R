@@ -72,7 +72,7 @@ upload_data=function(nuts_info, data){
 		sqlExecute(conn, query, NULL, fetch=F)
 
 		# save table 
-		sqlSave(conn, dat=data, tablename=tab_name, addPK=T, fast=T, safer=F)
+		sqlSave(conn, dat=data, tablename=tab_name$tab_name, addPK=T, fast=T, safer=F)
 		odbcClose(conn)
 }
 

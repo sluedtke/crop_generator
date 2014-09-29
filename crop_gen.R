@@ -19,7 +19,6 @@ library(dplyr)
 library(dplyrExtras)
 library(reshape2)
 library(foreach)
-# library(hydroGOF)
 library(data.table)
 library(lhs)
 library(RODBCext)
@@ -39,13 +38,13 @@ single_nuts=nuts_info_all[(nuts_info_all$nuts_code=='DE42' | nuts_info_all$nuts_
 
 mc_runs=1
 
-# library(doMPI)
-# cl = startMPIcluster()
-# registerDoMPI(cl)
+library(doMPI)
+cl = startMPIcluster()
+registerDoMPI(cl)
 #  
 foreach(i=c(1:nrow(single_nuts)),
 		.packages=c("RODBCext", "plyr", "dplyr", "dplyrExtras", "reshape2", "foreach",
-					"hydroGOF", "data.table", "lhs")
+					"data.table", "lhs")
 		)%dopar%{
 		
 		#subset the dataframe

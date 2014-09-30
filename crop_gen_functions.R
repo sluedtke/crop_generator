@@ -60,11 +60,20 @@ nuts_ts=function(nuts_id){
 
 # ------------------------------------- #
 
-upload_data=function(nuts_info, data){
+offset_year=function(){
+		query=paste0('SELECT * FROM data.crop_offset_year;')
+        conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
+		offset_tab=sqlExecute(conn, query, NULL, fetch=T)
+		odbcClose(conn)
+		return(offset_tab)
+}
 
+# ------------------------------------- #
+
+upload_data=function(nuts_info, data, prefix){
 		# create the table name first
-		tab_name=data.frame(tab_name=as.character(paste0('tmp.', 
-						 paste("tab", nuts_info, sep="_", collapse="_"))))
+		tab_name=data.frame(tab_name=paste0(paste0('tmp.', prefix, '_'), 
+									paste(nuts_info, sep="_", collapse="_")))
 
         conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
 		## drop table if exists
@@ -73,11 +82,23 @@ upload_data=function(nuts_info, data){
 
 		# save table 
 		sqlSave(conn, dat=data, tablename=tab_name$tab_name, addPK=T, fast=T, safer=F)
+
+		# update into the general results table
+		trigger_crop_stat(tab_name)
+
 		odbcClose(conn)
 }
 
+# ------------------------------------- #
 
-# ------------------------------------------------------------------#
+trigger_crop_stat=function(tab_name){
+		query='SELECT * FROM upsert_crop_gen_stat(?);'
+        conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
+		sqlExecute(conn, query, tab_name, fetch=F)
+		odbcClose(conn)
+}
+
+# ----------------------------------------------------------------------#
 
 # ------------------------  utility functions   ------------------------#
 
@@ -113,6 +134,24 @@ follow_up_crop_para_call=function(prob, follow_up_crop_para){
 		# compute how much we fill based  the parameter
 		prob=prob+(gap*follow_up_crop_para)
 		return(prob)
+}
+
+# ------------------------------------- #
+
+# summarize the monte-carlo simulations
+summarize_mc=function(mc_data_table){
+
+		temp=group_by(mc_data_table, objectid, year, crop_id) %>%
+				# summarize(., count=n())
+				summarise (n = n()) %>%
+				mutate(prob = n / sum(n)) %>%
+				select(., c(objectid, year, crop_id, prob)) %>%
+				filter(prob==max(prob)) %>%
+				ungroup(.) %>%
+				group_by(., objectid, year) %>%
+				sample_n(., size=1)
+
+		return(temp)
 }
 
 # ------------------ crop dist functions --------------------------#

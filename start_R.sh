@@ -16,10 +16,7 @@ set -x
 #BSUB -a openmpi
 
 # Set number of CPUs
-#BSUB -n 3
-
-# name of the output file
-#BSUB -o 3_cpus.out
+#BSUB -n 21
 
 
 # Start R MPI job

@@ -32,9 +32,9 @@ nuts_info_all=nuts()
 
 
 
-# single_nuts=sample_n(nuts_info_all, 2, replace=F)
+single_nuts=sample_n(nuts_info_all, 20, replace=F)
 # nuts_info=nuts_info_all[nuts_info_all$nuts_code=='DE42', ]
-single_nuts=nuts_info_all[(nuts_info_all$nuts_code=='DE42' | nuts_info_all$nuts_code=='DE41'), ]
+# single_nuts=nuts_info_all[(nuts_info_all$nuts_code=='DE42' | nuts_info_all$nuts_code=='DE41'), ]
 
 mc_runs=1
 

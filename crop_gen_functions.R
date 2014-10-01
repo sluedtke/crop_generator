@@ -76,6 +76,7 @@ upload_data=function(nuts_info, data, prefix){
 									paste(nuts_info, sep="_", collapse="_")))
 
         conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
+
 		## drop table if exists
 		query=paste0('DROP TABLE IF EXISTS ', tab_name$tab_name, ';')
 		sqlExecute(conn, query, NULL, fetch=F)
@@ -85,6 +86,10 @@ upload_data=function(nuts_info, data, prefix){
 
 		# update into the general results table
 		trigger_crop_stat(tab_name)
+
+		## drop temporary table from tmp schema
+		query=paste0('DROP TABLE IF EXISTS ', tab_name$tab_name, ';')
+		sqlExecute(conn, query, NULL, fetch=F)
 
 		odbcClose(conn)
 }

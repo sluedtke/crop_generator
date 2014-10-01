@@ -78,18 +78,24 @@ foreach(i=seq_len(nrow(single_nuts)),
 		offset_tab=as.data.table(lapply(offset_tab, as.numeric))
 		# -----------------------------------------------------------------------#
 
-		mc_temp=foreach(run=seq_len(mc_runs), .combine="rbind")%do%{
+		# Some nuts unit are not covered by the EU-refgrid, the have 0 rows in the base_probs tab
+		# we check for that and break the loop if that is the case
+		if(nrow(base_probs)==0){
+				cat("Nuts unit not covered by the EU-RefGrid \n")
+		}else{
+				mc_temp=foreach(run=seq_len(mc_runs), .combine="rbind")%do%{
 
-				temp=crop_distribution(nuts_base_probs=base_probs, nuts_base_ts=ts_data,
-								  years=years, soil_para=1, follow_up_crop_para=1)
-				temp$mc_run=factor(run)
-				temp=temp
+						temp=crop_distribution(nuts_base_probs=base_probs, nuts_base_ts=ts_data,
+										  years=years, soil_para=1, follow_up_crop_para=1)
+						temp$mc_run=factor(run)
+						temp=temp
+				}
+				
+				# summarize the mc runs
+				mc_temp=summarize_mc(mc_temp)
+
+				# upload_data(nuts_info, data=mc_temp, prefix="stat")
 		}
-		
-		# summarize the mc runs
-		mc_temp=summarize_mc(mc_temp)
-
-		upload_data(nuts_info, data=mc_temp, prefix="stat")
 }
 
 closeCluster(cl)

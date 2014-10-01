@@ -34,20 +34,19 @@ nuts_info_all=nuts()
 offset_tab=offset_year()
 
 
-single_nuts=sample_n(nuts_info_all, 19, replace=F)
-# nuts_info=nuts_info_all[nuts_info_all$nuts_code=='DE42', ]
-# single_nuts=nuts_info_all[(nuts_info_all$nuts_code=='DE42' | nuts_info_all$nuts_code=='DE41'), ]
+nuts_info_all=sample_n(nuts_info_all, 19, replace=F)
 
-mc_runs=10
+mc_runs=100
 
 library(doMPI)
 cl = startMPIcluster()
 registerDoMPI(cl)
 
 
-foreach(i=seq_len(nrow(single_nuts)),
+foreach(i=seq_len(nrow(nuts_info_all)),
 		.packages=c("RODBCext", "plyr", "dplyr", "dplyrExtras", "reshape2", "foreach",
-					"data.table", "lhs")
+					"data.table", "lhs"), 
+		.errorhandling='pass'
 		)%dopar%{
 		
 		#subset the dataframe

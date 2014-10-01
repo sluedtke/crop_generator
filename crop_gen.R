@@ -94,9 +94,12 @@ foreach(i=seq_len(nrow(single_nuts)),
 				# summarize the mc runs
 				mc_temp=summarize_mc(mc_temp)
 
+				# joining the unique identifier from the postgres table
+				mc_temp$oid_nuts=nuts_info$id
+
+				# upload_rpostgresql(nuts_info, data=mc_temp, prefix="stat")
 				upload_data(nuts_info, data=mc_temp, prefix="stat")
 		}
 }
 
 closeCluster(cl)
-

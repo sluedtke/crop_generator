@@ -16,7 +16,7 @@ set -x
 #BSUB -a openmpi
 
 # Set number of CPUs
-#BSUB -n 21
+#BSUB -n 20
 
 
 # Start R MPI job

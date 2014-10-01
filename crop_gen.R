@@ -34,7 +34,7 @@ nuts_info_all=nuts()
 offset_tab=offset_year()
 
 
-single_nuts=sample_n(nuts_info_all, 2, replace=F)
+single_nuts=sample_n(nuts_info_all, 19, replace=F)
 # nuts_info=nuts_info_all[nuts_info_all$nuts_code=='DE42', ]
 # single_nuts=nuts_info_all[(nuts_info_all$nuts_code=='DE42' | nuts_info_all$nuts_code=='DE41'), ]
 

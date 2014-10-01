@@ -87,7 +87,7 @@ foreach(i=seq_len(nrow(single_nuts)),
 				# summarize the mc runs
 				mc_temp=summarize_mc(mc_temp)
 
-				# upload_data(nuts_info, data=mc_temp, prefix="stat")
+				upload_data(nuts_info, data=mc_temp, prefix="stat")
 		}
 }
 

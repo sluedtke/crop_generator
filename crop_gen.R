@@ -34,10 +34,9 @@ offset_tab=offset_year()
 
 
 single_nuts=sample_n(nuts_info_all, 2, replace=F)
-# nuts_info=nuts_info_all[nuts_info_all$nuts_code=='DE42', ]
 # single_nuts=nuts_info_all[(nuts_info_all$nuts_code=='DE42' | nuts_info_all$nuts_code=='DE41'), ]
 
-mc_runs=10
+mc_runs=1
 
 library(doMPI)
 cl = startMPIcluster()
@@ -46,7 +45,8 @@ registerDoMPI(cl)
 
 foreach(i=seq_len(nrow(single_nuts)),
 		.packages=c("RODBCext", "plyr", "dplyr", "dplyrExtras", "reshape2", "foreach",
-					"data.table", "lhs")
+					"data.table", "lhs"), 
+		.errorhandling='pass'
 		)%dopar%{
 		
 		#subset the dataframe
@@ -90,9 +90,10 @@ foreach(i=seq_len(nrow(single_nuts)),
 				# joining the unique identifier from the postgres table
 				mc_temp$oid_nuts=nuts_info$id
 
-				# upload_rpostgresql(nuts_info, data=mc_temp, prefix="stat")
 				upload_data(nuts_info, data=mc_temp, prefix="stat")
+
 		}
 }
 
 closeCluster(cl)
+

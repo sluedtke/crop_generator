@@ -70,36 +70,35 @@ offset_year=function(){
 
 # ------------------------------------- #
 
-upload_data=function(nuts_info, data, prefix){
-		# create the table name first
-		tab_name=data.frame(tab_name=paste0(paste0('tmp.', prefix, '_'), 
-									paste(nuts_info, sep="_", collapse="_")))
+upload_data=function(nuts_info, data, prefix) {
+		data=as.data.frame(data)
+		source('~/.rpostgres_ini.R')
 
-        conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
+		tab_name=data.frame(tab_name=paste0(paste0(prefix, '_'), paste(nuts_info, sep="_", collapse="_")))	
+		schema_name = 'tmp'
+		tab_name = toString(tab_name$tab_name)
+		schema_tab_name = paste(schema_name, tab_name, sep=".")
+		query <- paste0('DROP TABLE IF EXISTS ', schema_tab_name, ';');
+		rs <- dbSendQuery(con, query)
+		dbWriteTable(con, c(schema_name, tab_name), data)
 
-		## drop table if exists
-		query=paste0('DROP TABLE IF EXISTS ', tab_name$tab_name, ';')
-		sqlExecute(conn, query, NULL, fetch=F)
+		dbDisconnect(con)
+		dbUnloadDriver(drv)
 
-		# save table 
-		sqlSave(conn, dat=data, tablename=tab_name$tab_name, addPK=T, fast=T, safer=F)
-
-		# update into the general results table
-		trigger_crop_stat(tab_name)
-
-		## drop temporary table from tmp schema
-		query=paste0('DROP TABLE IF EXISTS ', tab_name$tab_name, ';')
-		sqlExecute(conn, query, NULL, fetch=F)
-
-		odbcClose(conn)
+		trigger_crop_stat(schema_tab_name)
 }
 
 # ------------------------------------- #
 
 trigger_crop_stat=function(tab_name){
-		query='SELECT * FROM upsert_crop_gen_stat(?);'
         conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
+
+		query='SELECT * FROM upsert_crop_gen_stat(?);'
 		sqlExecute(conn, query, tab_name, fetch=F)
+
+		query = paste0('DROP TABLE IF EXISTS ', tab_name, ';');
+		sqlExecute(conn, query, NULL, fetch=F)
+
 		odbcClose(conn)
 }
 

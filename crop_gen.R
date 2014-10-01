@@ -34,7 +34,7 @@ nuts_info_all=nuts()
 offset_tab=offset_year()
 
 
-nuts_info_all=sample_n(nuts_info_all, 19, replace=F)
+# nuts_info_all=sample_n(nuts_info_all, 31, replace=F)
 
 mc_runs=100
 
@@ -50,7 +50,7 @@ foreach(i=seq_len(nrow(nuts_info_all)),
 		)%dopar%{
 		
 		#subset the dataframe
-		nuts_info=single_nuts[i,]
+		nuts_info=nuts_info_all[i,]
 
 		# -------------------------- Data import --------------------------------#
 
@@ -62,8 +62,6 @@ foreach(i=seq_len(nrow(nuts_info_all)),
 				mutate(., follow_up_soil_prob=as.numeric(as.character(follow_up_soil_prob)))
 
 		years=unique(ts_data$year)
-
-		offset_tab=data.frame(current_crop_id=c(9, 7, 14), offset_year=c(3, 3, 3))
 
 		# -------------------------- convert to data.tables ---------------------#
 

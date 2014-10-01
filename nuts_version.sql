@@ -11,9 +11,9 @@ FROM
  data.time_series)
 
 -- and the version the correspond to
-SELECT nuts_code, MAX(nuts_version_year)
+SELECT id, nuts_code, MAX(nuts_version_year)
 from data.nuts_version_years
 INNER JOIN unique_nuts ON
 unique_nuts.nuts_id=data.nuts_version_years.nuts_code
-GROUP BY nuts_code;
+GROUP BY nuts_code, id;
 

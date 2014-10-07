@@ -33,15 +33,17 @@ nuts_info_all=nuts()
 # And the crops and their minimum offset 
 offset_tab=offset_year()
 
+# And the crops and their maximum continuous occurrence 
+max_tab=max_year() %>%
+		rename(., c("current_crop_id" = "follow_up_crop_id")) %>%
+		rename(., c("offset_year" = "max_seq_year"))
 
-# nuts_info_all=sample_n(nuts_info_all, 31, replace=F)
 
 mc_runs=100
 
 library(doMPI)
 cl = startMPIcluster()
 registerDoMPI(cl)
-
 
 foreach(i=seq_len(nrow(nuts_info_all)),
 		.packages=c("RODBCext", "plyr", "dplyr", "dplyrExtras", "reshape2", "foreach",
@@ -66,6 +68,7 @@ foreach(i=seq_len(nrow(nuts_info_all)),
 		# -------------------------- convert to data.tables ---------------------#
 
 		ts_data=as.data.table(ts_data) 
+		
 		setkey(ts_data, crop_id, year)
 
 		base_probs=as.data.table(base_probs)
@@ -73,6 +76,7 @@ foreach(i=seq_len(nrow(nuts_info_all)),
 
 
 		offset_tab=as.data.table(lapply(offset_tab, as.numeric))
+		max_tab=as.data.table(lapply(max_tab, as.numeric))
 		# -----------------------------------------------------------------------#
 
 		# Some nuts unit are not covered by the EU-refgrid, the have 0 rows in the base_probs tab
@@ -87,14 +91,13 @@ foreach(i=seq_len(nrow(nuts_info_all)),
 						temp$mc_run=factor(run)
 						temp=temp
 				}
-				
-				# summarize the mc runs
-				mc_temp=summarize_mc(mc_temp)
-
 				# joining the unique identifier from the postgres table
 				mc_temp$oid_nuts=nuts_info$id
+				
+				# upload the features to the DB
+				upload_data(nuts_info, data=mc_temp, prefix="stat")
 
-				# upload_rpostgresql(nuts_info, data=mc_temp, prefix="stat")
+				# upload data to db
 				upload_data(nuts_info, data=mc_temp, prefix="stat")
 		}
 }

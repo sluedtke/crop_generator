@@ -32,9 +32,15 @@ nuts_info_all=nuts()
 # And the crops and their minimum offset 
 offset_tab=offset_year()
 
+# And the crops and their maximum continuous occurrence 
+max_tab=max_year() %>%
+		rename(., c("current_crop_id" = "follow_up_crop_id")) %>%
+		rename(., c("offset_year" = "max_seq_year"))
 
-single_nuts=sample_n(nuts_info_all, 2, replace=F)
-# single_nuts=nuts_info_all[(nuts_info_all$nuts_code=='DE42' | nuts_info_all$nuts_code=='DE41'), ]
+
+# single_nuts=sample_n(nuts_info_all, 2, replace=F)
+single_nuts=nuts_info_all[(nuts_info_all$nuts_code=='ES24' |
+nuts_info_all$nuts_code=='UKK2'), ]
 
 mc_runs=1
 
@@ -61,7 +67,11 @@ foreach(i=seq_len(nrow(single_nuts)),
 
 		# -------------------------- convert to data.tables ---------------------#
 
-		ts_data=as.data.table(ts_data) 
+		ts_data=as.data.table(ts_data) %>%
+		# mutate  the numeric, in case we got only one value per year, the value is stored
+		# a integer and that causes problems with the latter joins .. 
+				mutate(., value=as.numeric(value))
+		
 		setkey(ts_data, crop_id, year)
 
 		base_probs=as.data.table(base_probs)
@@ -69,6 +79,7 @@ foreach(i=seq_len(nrow(single_nuts)),
 
 
 		offset_tab=as.data.table(lapply(offset_tab, as.numeric))
+		max_tab=as.data.table(lapply(max_tab, as.numeric))
 		# -----------------------------------------------------------------------#
 
 		# Some nuts unit are not covered by the EU-refgrid, the have 0 rows in the base_probs tab
@@ -89,7 +100,8 @@ foreach(i=seq_len(nrow(single_nuts)),
 
 				# joining the unique identifier from the postgres table
 				mc_temp$oid_nuts=nuts_info$id
-
+				
+				# upload the features to the DB
 				upload_data(nuts_info, data=mc_temp, prefix="stat")
 
 		}

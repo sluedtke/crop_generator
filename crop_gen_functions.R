@@ -70,6 +70,15 @@ offset_year=function(){
 
 # ------------------------------------- #
 
+max_year=function(){
+		query=paste0('SELECT * FROM data.crop_max_year;')
+        conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
+		max_tab=sqlExecute(conn, query, NULL, fetch=T)
+		odbcClose(conn)
+		return(max_tab)
+}
+# ------------------------------------- #
+
 upload_data=function(nuts_info, data, prefix) {
 		data=as.data.frame(data)
 		source('~/.rpostgres_ini.R')
@@ -108,7 +117,7 @@ trigger_crop_stat=function(tab_name){
 
 # rescale probs to sum up to one
 rescale_probs=function(vect){
-		vect=vect/sum(vect)
+		vect=as.numeric(vect/sum(vect, na.rm=T))
 		return(vect)
 }
 
@@ -148,7 +157,7 @@ summarize_mc=function(mc_data_table){
 		temp=group_by(mc_data_table, objectid, year, crop_id) %>%
 				# summarize(., count=n())
 				summarise (n = n()) %>%
-				mutate(prob = n / sum(n)) %>%
+				mutate(prob = n / sum(n, na.rm=T)) %>%
 				select(., c(objectid, year, crop_id, prob)) %>%
 				filter(prob==max(prob)) %>%
 				ungroup(.) %>%
@@ -189,7 +198,12 @@ nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year, soil_para){
 				select(., objectid, current_crop_id, offset_year) %>%
 				rename(., c("current_crop_id" = "follow_up_crop_id"))
 
-		temp=list(crop_dist=init_crop, crop_offset=init_offset)
+		# Set up the crop counter
+		crop_counter=select(init_crop, c(objectid, current_crop_id)) %>%
+				mutate(counter=1) %>%
+				rename(., c("current_crop_id" = "follow_up_crop_id"))
+
+		temp=list(crop_dist=init_crop, crop_offset=init_offset, crop_counter=crop_counter)
 		return(temp)
 }
 
@@ -205,7 +219,7 @@ nuts_crop_cont=function(current_year, current_crop_dat, nuts_base_probs, nuts_ba
 		# get the single items from the list
 		current_crop_dist=current_crop_dat$crop_dist
 		crop_offset=current_crop_dat$crop_offset
-
+		crop_counter=current_crop_dat$crop_counter
 
 		## distribute the crops for the current year
 		temp_dist=inner_join(current_crop_dist, base_probs) %>%
@@ -216,8 +230,20 @@ nuts_crop_cont=function(current_year, current_crop_dat, nuts_base_probs, nuts_ba
 				left_join(crop_offset, copy=T) %>%
 				# update the probs if offset_year is present
 				mutate_if(., is.na(offset_year)==F, 
-						  value=0, follow_up_crop_prob=0, follow_up_soil_prob=0) %>%
+						  value=0.01, follow_up_crop_prob=0.01, follow_up_soil_prob=0.01) %>%
 
+				left_join(crop_counter, copy=T) %>%
+				left_join(max_tab, copy=T) %>%
+
+				# compute the difference between the maximum allowed sequence and the counter
+				mutate(., temp=counter-max_seq_year) %>%
+
+				# update the probs if the  difference between the counter and the maximum
+				# of follow up years from the table is greater than 0
+				mutate_if(., (temp>=0), 
+						  value=0.01, follow_up_crop_prob=0.01, follow_up_soil_prob=0.01) %>%
+				
+				# building groups per pixel
 				group_by(., objectid) %>%
 
 				# rescale the time series probs
@@ -232,14 +258,24 @@ nuts_crop_cont=function(current_year, current_crop_dat, nuts_base_probs, nuts_ba
 				mutate(., follow_up_soil_prob=soil_para_call(follow_up_soil_prob, soil_para)) %>%
 
 				# get the joint probability 
-				mutate(., prob=rescale_probs(follow_up_crop_prob*follow_up_soil_prob*value)) %>%
-
 				# and rescale
-				sample_n(., size=1, weight=prob, replace=F) %>%
+				mutate(., prob=rescale_probs(follow_up_crop_prob*follow_up_soil_prob*value)) %>%
+		
+				# draw
+				sample_n(., size=1, weight=prob, replace=F)
+
+		# Update the crop counter
+		crop_counter=select(temp_dist, c(objectid, current_crop_id, follow_up_crop_id, counter)) %>%
+		# If we selected the same crop as the year before, increase the counter by 1
+				mutate_if(., current_crop_id==follow_up_crop_id, counter=counter+1) %>%
+		# if not, set the counter to 0
+				mutate_if(., current_crop_id!=follow_up_crop_id, counter=0) %>%
+				select(., c(objectid, follow_up_crop_id, counter)) %>%
+				rename(., c("follow_up_crop_id"="current_crop_id")) 
 				
 				# select columns of interest
-				select(.,  c(follow_up_crop_id, objectid, year)) %>%
-				rename(.,  c("follow_up_crop_id"="current_crop_id"))
+		temp_dist=select(temp_dist, c(follow_up_crop_id, objectid, year)) %>%
+				rename(., c("follow_up_crop_id"="current_crop_id"))
 
 		# get the most recent cells and crops that must have a break
 		current_crop_offset=left_join(temp_dist, offset_tab, copy=T) %>%
@@ -249,9 +285,10 @@ nuts_crop_cont=function(current_year, current_crop_dat, nuts_base_probs, nuts_ba
 				filter(., is.na(offset_year)==F ) %>%
 				filter(., offset_year!=0 )
 
+		# create the return list 
+		temp=list(crop_dist=temp_dist, crop_offset=current_crop_offset,
+				  crop_counter=crop_counter)
 
-
-		temp=list(crop_dist=temp_dist, crop_offset=current_crop_offset)
 		return(temp)
 }
 
@@ -281,6 +318,8 @@ crop_distribution=function(nuts_base_probs, nuts_base_ts, years, soil_para, foll
 												soil_para=soil_para,
 												follow_up_crop_para=follow_up_crop_para)
 
+				# browser()
+				print(max(current_crop_dat$crop_counter$counter, na.rm=T))
 				current_crop_dist=current_crop_dat$crop_dist
 		}
 

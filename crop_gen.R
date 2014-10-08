@@ -47,7 +47,7 @@ registerDoMPI(cl)
 
 foreach(i=seq_len(nrow(nuts_info_all)),
 		.packages=c("RODBCext", "plyr", "dplyr", "dplyrExtras", "reshape2", "foreach",
-					"data.table", "lhs"), 
+					"data.table", "rpg"), 
 		.errorhandling='pass'
 		)%dopar%{
 		

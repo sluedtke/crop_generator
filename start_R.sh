@@ -15,10 +15,6 @@ set -x
 
 #BSUB -a openmpi
 
-# Set number of CPUs
-#BSUB -n 32 
-
-
 # Start R MPI job
 mpirun.lsf ./crop_gen.R
 

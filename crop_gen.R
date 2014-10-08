@@ -20,8 +20,8 @@ library(dplyrExtras)
 library(reshape2)
 library(foreach)
 library(data.table)
-library(lhs)
 library(RODBCext)
+library(rpg)
 
 ############################################################################
 source("./crop_gen_functions.R")

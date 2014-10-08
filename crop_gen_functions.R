@@ -83,35 +83,40 @@ upload_data=function(nuts_info, data, prefix) {
 		data=as.data.frame(data)
 		source('~/.rpostgres_ini.R')
 
-		tab_name=data.frame(tab_name=paste0(paste0(prefix, '_'), paste(nuts_info, sep="_", collapse="_")))	
+		tab_name=data.frame(tab_name=paste0(paste0(prefix, '_'),
+								paste(nuts_info, sep="_", collapse="_")))	
 		schema_name = 'tmp'
 		tab_name = toString(tab_name$tab_name)
 		schema_tab_name = paste(schema_name, tab_name, sep=".")
-		query <- paste0('DROP TABLE IF EXISTS ', schema_tab_name, ';');
-		rs <- dbSendQuery(con, query)
-		dbWriteTable(con, c(schema_name, tab_name), data)
+		query = paste0('DROP TABLE IF EXISTS ', schema_tab_name, ';');
+		rs = dbSendQuery(con, query)
+		
+		if(dbWriteTable(con, c(schema_name, tab_name), data)==TRUE){
+				nuts_success(nuts_info, tab_name, success=TRUE)
+		}else{
+				nuts_success(nuts_info, tab_name, success=FALSE)
+		}
 
 		dbDisconnect(con)
 		dbUnloadDriver(drv)
 
-		trigger_crop_stat(schema_tab_name)
 }
 
 # ------------------------------------- #
+nuts_success=function(nuts_info, tab_name, success){
 
-trigger_crop_stat=function(tab_name){
+		success_tab=data.frame(oid_nuts=nuts_info$id,
+							   success_time=as.character(Sys.time()),
+							   tmp_table=tab_name, success=success)
+
+		query=readLines("./upsert_success.sql")
+		query=paste(query, collapse=" \n ")
         conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
-
-		query='SELECT * FROM upsert_crop_gen_stat(?);'
-		sqlExecute(conn, query, tab_name, fetch=F)
-
-		query = paste0('DROP TABLE IF EXISTS ', tab_name, ';');
-		sqlExecute(conn, query, NULL, fetch=F)
-
+		nuts_ts=sqlExecute(conn, query, success_tab, fetch=F)
 		odbcClose(conn)
+		return()
 }
 
-# ----------------------------------------------------------------------#
 
 # ------------------------  utility functions   ------------------------#
 
@@ -318,8 +323,6 @@ crop_distribution=function(nuts_base_probs, nuts_base_ts, years, soil_para, foll
 												soil_para=soil_para,
 												follow_up_crop_para=follow_up_crop_para)
 
-				# browser()
-				print(max(current_crop_dat$crop_counter$counter, na.rm=T))
 				current_crop_dist=current_crop_dat$crop_dist
 		}
 

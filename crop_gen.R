@@ -1,3 +1,4 @@
+#!/usr/local/R/R-3.1.0/bin/Rscript
 ################################################################################################
 
 #       Filename: crop_gen.R
@@ -38,39 +39,35 @@ max_tab=max_year() %>%
 		rename(., c("offset_year" = "max_seq_year"))
 
 
-# single_nuts=sample_n(nuts_info_all, 2, replace=F)
-single_nuts=nuts_info_all[(nuts_info_all$nuts_code=='ES24' |
-nuts_info_all$nuts_code=='UKK2'), ]
-
-mc_runs=1
+mc_runs=100
 
 library(doMPI)
 cl = startMPIcluster()
 registerDoMPI(cl)
 
-
-foreach(i=seq_len(nrow(single_nuts)),
+foreach(i=seq_len(nrow(nuts_info_all)),
 		.packages=c("RODBCext", "plyr", "dplyr", "dplyrExtras", "reshape2", "foreach",
 					"data.table", "lhs"), 
 		.errorhandling='pass'
 		)%dopar%{
 		
 		#subset the dataframe
-		nuts_info=single_nuts[i,]
+		nuts_info=nuts_info_all[i,]
 
 		# -------------------------- Data import --------------------------------#
 
-		ts_data=nuts_ts(nuts_id=nuts_info$nuts_code)
-		base_probs=nuts_probs(nuts_info)
+		ts_data=nuts_ts(nuts_id=nuts_info$nuts_code) %>%
+				mutate(., value=as.numeric(as.character(value)))
+
+		base_probs=nuts_probs(nuts_info) %>%
+				mutate(., current_soil_prob=as.numeric(as.character(current_soil_prob))) %>%
+				mutate(., follow_up_soil_prob=as.numeric(as.character(follow_up_soil_prob)))
 
 		years=unique(ts_data$year)
 
 		# -------------------------- convert to data.tables ---------------------#
 
-		ts_data=as.data.table(ts_data) %>%
-		# mutate  the numeric, in case we got only one value per year, the value is stored
-		# a integer and that causes problems with the latter joins .. 
-				mutate(., value=as.numeric(value))
+		ts_data=as.data.table(ts_data) 
 		
 		setkey(ts_data, crop_id, year)
 
@@ -94,16 +91,14 @@ foreach(i=seq_len(nrow(single_nuts)),
 						temp$mc_run=factor(run)
 						temp=temp
 				}
-				
-				# summarize the mc runs
-				mc_temp=summarize_mc(mc_temp)
-
 				# joining the unique identifier from the postgres table
 				mc_temp$oid_nuts=nuts_info$id
 				
 				# upload the features to the DB
 				upload_data(nuts_info, data=mc_temp, prefix="stat")
 
+				# upload data to db
+				upload_data(nuts_info, data=mc_temp, prefix="stat")
 		}
 }
 

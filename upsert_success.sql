@@ -18,9 +18,9 @@ SET
  success = newvals.success
 FROM newvals
 WHERE 
- newvals.oid_nuts = nuts_completed.oid_nuts AND
- newvals.tmp_table = nuts_completed.tmp_table AND
- newvals.success = nuts_completed.success;
+ newvals.oid_nuts = nuts_completed.oid_nuts;
+
+
 
 INSERT INTO results.nuts_completed(
 		oid_nuts, success_time, tmp_table, success) 
@@ -29,13 +29,8 @@ SELECT
 FROM 
  newvals
 LEFT OUTER JOIN results.nuts_completed ON
- (newvals.oid_nuts = nuts_completed.oid_nuts AND
-	   	newvals.tmp_table = nuts_completed.tmp_table AND
-	   	newvals.success = nuts_completed.success)
+ newvals.oid_nuts = nuts_completed.oid_nuts
 WHERE 
- nuts_completed.oid_nuts IS NULL AND
- nuts_completed.success_time IS NULL AND
- nuts_completed.tmp_table IS NULL AND
- nuts_completed.success IS NULL;
+ nuts_completed.oid_nuts IS NULL;
 
 COMMIT;

@@ -106,6 +106,9 @@ foreach(i=seq_len(nrow(single_nuts)),
 
 		}
 }
-
 closeCluster(cl)
+
+
+
+
 

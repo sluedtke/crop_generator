@@ -105,15 +105,20 @@ upload_data=function(nuts_info, data, prefix) {
 # ------------------------------------- #
 nuts_success=function(nuts_info, tab_name, success){
 
-		success_tab=data.frame(oid_nuts=nuts_info$id,
-							   success_time=as.character(Sys.time()),
-							   tmp_table=tab_name, success=success)
+
+		pars_char=paste(c(paste0('\'', as.character(Sys.time()), '\''),
+			   paste0('\'', tab_name, '\''), 
+			   paste0('\'', success, '\'')), collapse=", ")
+		par_tot=paste(nuts_info$id, pars_char, sep=", ")
 
 		query=readLines("./upsert_success.sql")
 		query=paste(query, collapse=" \n ")
-        conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
-		nuts_ts=sqlExecute(conn, query, success_tab, fetch=F)
-		odbcClose(conn)
+		query=gsub('XXXX', par_tot, query)
+		
+		#a real asynchronous  query that returns the cursor immediately
+		connect(dbname = "crop_generator", host = "139.17.99.27", user="sluedtke")
+		async_query(sql=query, pars=NULL)
+		  
 		return()
 }
 

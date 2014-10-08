@@ -19,8 +19,8 @@ library(dplyrExtras)
 library(reshape2)
 library(foreach)
 library(data.table)
-library(lhs)
 library(RODBCext)
+library(rpg)
 
 ############################################################################
 source("./crop_gen_functions.R")
@@ -51,7 +51,7 @@ registerDoMPI(cl)
 
 foreach(i=seq_len(nrow(single_nuts)),
 		.packages=c("RODBCext", "plyr", "dplyr", "dplyrExtras", "reshape2", "foreach",
-					"data.table", "lhs"), 
+					"data.table", "rpg"), 
 		.errorhandling='pass'
 		)%dopar%{
 		

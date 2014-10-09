@@ -1,15 +1,11 @@
 ﻿-- Thanks to http://stackoverflow.com/a/17267423
 
 BEGIN;
-
 CREATE TEMPORARY TABLE 
- newvals (oid_nuts INTEGER, success_time TIMESTAMP WITH TIME ZONE, tmp_table TEXT, success
-		BOOLEAN) ON COMMIT DROP;
+ newvals (oid_nuts INTEGER, success_time TIMESTAMP WITH TIME ZONE, tmp_table TEXT, success BOOLEAN) ON COMMIT DROP;
 
 INSERT INTO newvals (oid_nuts, success_time, tmp_table, success) VALUES 
-				(XXXX);
-
-LOCK TABLE results.nuts_completed IN EXCLUSIVE MODE;
+				(?, ?, ?, ?);
 
 UPDATE results.nuts_completed
 SET 

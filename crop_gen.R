@@ -39,13 +39,14 @@ max_tab=max_year() %>%
 
 
 # single_nuts=sample_n(nuts_info_all, 2, replace=F)
-single_nuts=nuts_info_all[(nuts_info_all$nuts_code=='ES24' |
-nuts_info_all$nuts_code=='UKK2'), ]
+single_nuts=nuts_info_all[(nuts_info_all$nuts_code=='UKF1'
+						   |nuts_info_all$nuts_code=='UKF2' 
+						   |nuts_info_all$nuts_code=='UKF3'), ]
 
 mc_runs=1
 
 library(doMPI)
-cl = startMPIcluster()
+cl = startMPIcluster(count=3, verbose=TRUE)
 registerDoMPI(cl)
 
 

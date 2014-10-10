@@ -182,7 +182,7 @@ nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year, soil_para){
 
 		## distribute the crops for the first year
 		init_crop=subset(nuts_base_probs, nuts_base_probs$current_crop_id %in% temp_ts$current_crop_id) %>%
-				select(., objectid, current_crop_id, current_soil_prob) %>%
+				select(., c(objectid, current_crop_id, current_soil_prob)) %>%
 				unique(., by=c("objectid", "current_crop_id")) %>%
 				group_by(., objectid) %>%
 				inner_join(., temp_ts, copy=T) %>%

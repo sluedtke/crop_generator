@@ -1,4 +1,4 @@
-﻿-- This document gives a short explanation of the single temporary tables and the final
+-- This document gives a short explanation of the single temporary tables and the final
 -- query. Eventually it will produce a query in pure R code that can be loaded by a
 -- script. The question mark (?) in the query is a placeholder that is used by a variable.
 -- All queries will be combined with a WITH statement in PostGreSQL.

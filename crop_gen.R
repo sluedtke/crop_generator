@@ -1,5 +1,5 @@
-#!/usr/bin/Rscript
-### !/usr/local/R/R-3.1.0/bin/Rscript
+#!/usr/local/R/R-3.1.0/bin/Rscript
+####!/usr/bin/Rscript
 ################################################################################################
 
 #       Filename: crop_gen.R

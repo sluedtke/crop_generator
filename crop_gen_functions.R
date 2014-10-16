@@ -26,7 +26,6 @@
 nuts=function(){
 		query=readLines("./nuts_version.sql")
 		query=paste(query, collapse=" \n ")
-
         conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
 		nuts_version=sqlExecute(conn, query, fetch=T)
 		odbcClose(conn)

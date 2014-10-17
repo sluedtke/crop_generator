@@ -1,4 +1,4 @@
-﻿-- Thanks to http://stackoverflow.com/a/17267423
+-- Thanks to http://stackoverflow.com/a/17267423
 
 BEGIN;
 CREATE TEMPORARY TABLE 

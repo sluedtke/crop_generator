@@ -37,8 +37,8 @@ library(foreach)
 source("./crop_gen_functions.R")
 ############################################################################
 
+# -----------------------------------------------------------------------#
 mpiwrapper = function() {
-
 		####################################################################
 		library(plyr)
 		library(dplyr)
@@ -83,10 +83,10 @@ mpiwrapper = function() {
 
 						# -------------------------- Data import --------------------------------#
 						## fetching standard data
+
 						nuts_info=as.data.frame(t(nuts_info_all[id,]))
-						print(nuts_info)
-						print(str(nuts_info))
-						# nuts_info=as.data.frame((nuts_info_all[id,]))
+
+
 						# And the crops and their minimum offset 
 						offset_tab=offset_year()
 
@@ -95,10 +95,13 @@ mpiwrapper = function() {
 								rename(., c("current_crop_id" = "follow_up_crop_id")) %>%
 								rename(., c("offset_year" = "max_seq_year"))
 
-						# -------------------------- Data import --------------------------------#
+						ts_data=nuts_ts(nuts_id=nuts_info$nuts_code) %>%
+								mutate(., value=as.numeric(as.character(value)))
 
-						ts_data=nuts_ts(nuts_id=nuts_info$nuts_code)
-						base_probs=nuts_probs(nuts_info)
+
+						nuts_base_probs=nuts_probs(nuts_info) %>%
+								mutate(., current_soil_prob=as.numeric(as.character(current_soil_prob))) %>%
+								mutate(., follow_up_soil_prob=as.numeric(as.character(follow_up_soil_prob)))
 
 						years=unique(ts_data$year)
 
@@ -111,12 +114,12 @@ mpiwrapper = function() {
 
 						setkey(ts_data, crop_id, year)
 
-						base_probs=as.data.table(base_probs)
-						setkey(base_probs, current_crop_id, objectid)
-
+						nuts_base_probs=as.data.table(nuts_base_probs)
+						setkey(nuts_base_probs, current_crop_id, objectid)
 
 						offset_tab=as.data.table(lapply(offset_tab, as.numeric))
 						max_tab=as.data.table(lapply(max_tab, as.numeric))
+						
 						# -----------------------------------------------------------------------#
 						mc_runs=1
 						# -----------------------------------------------------------------------#
@@ -124,12 +127,12 @@ mpiwrapper = function() {
 
 						# Some nuts unit are not covered by the EU-refgrid, the have 0 rows in the base_probs tab
 						# we check for that and break the loop if that is the case
-						if(nrow(base_probs)==0){
+						if(nrow(nuts_base_probs)==0){
 								cat("Nuts unit not covered by the EU-RefGrid \n")
 						}else{
 								mc_temp=foreach(run=seq_len(mc_runs), .combine="rbind")%do%{
 
-										temp=crop_distribution(nuts_base_probs=base_probs, nuts_base_ts=ts_data,
+										temp=crop_distribution(nuts_base_probs=nuts_base_probs, nuts_base_ts=ts_data,
 															   years=years, soil_para=1, follow_up_crop_para=1,
 															   offset_tab=offset_tab, max_tab=max_tab)
 										temp$mc_run=factor(run)
@@ -169,20 +172,17 @@ mpiwrapper = function() {
 ## Get the list of nuts we want to use
 nuts_info_all=nuts()
 
-# single_nuts=sample_n(nuts_info_all, 2, replace=F)
-nuts_info_all=nuts_info_all[(nuts_info_all$nuts_code=='UKF1'
-						   |nuts_info_all$nuts_code=='UKF2' 
-						   |nuts_info_all$nuts_code=='UKF3'), ]
 
-
+## Broadcast the info the slaves
 nuts_info_all=as.matrix(nuts_info_all)
 mpi.bcast.Robj2slave(nuts_info_all)
 
 
 # Create task list
 tasks = vector('list')
-for (i in 1:nrow(nuts_info_all)) {
-    tasks[[i]] = list(id=i)
+# for (i in 1:nrow(nuts_info_all)) {
+for (i in 1:1) {
+    tasks[[i]] = list(id=90)
 }
 
 # Send the function to the slaves
@@ -199,6 +199,7 @@ junk = 0
 closed_slaves = 0 
 n_slaves = mpi.comm.size()-1 
 
+# -----------------------------------------------------------------------#
 while (closed_slaves < n_slaves) { 
 		# Receive a message from a slave 
 		message = mpi.recv.Robj(mpi.any.source(), mpi.any.tag()) 

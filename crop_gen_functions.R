@@ -26,7 +26,6 @@
 nuts=function(){
 		query=readLines("./nuts_version.sql")
 		query=paste(query, collapse=" \n ")
-
         conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
 		nuts_version=sqlExecute(conn, query, fetch=T)
 		odbcClose(conn)
@@ -80,13 +79,18 @@ max_year=function(){
 # ------------------------------------- #
 
 upload_data=function(nuts_info, data, prefix) {
-		data=as.data.frame(data)
+
+		data=as.data.frame(data, stringsAsfactors=F)
+		data$oid_nuts=as.integer(data$oid_nuts)
+		data$crop_id=as.integer(data$crop_id)
+
 		source('~/.rpostgres_ini.R')
 
-		tab_name=data.frame(tab_name=paste0(paste0(prefix, '_'),
-								paste(nuts_info, sep="_", collapse="_")))	
+		tab_name=paste0(paste0(prefix, '_'), paste(c(as.character(nuts_info$id),
+													 as.character(nuts_info$max)), sep="_", collapse="_"))
+
 		schema_name = 'tmp'
-		tab_name = toString(tab_name$tab_name)
+		tab_name = toString(tab_name)
 		schema_tab_name = paste(schema_name, tab_name, sep=".")
 		query = paste0('DROP TABLE IF EXISTS ', schema_tab_name, ';');
 		rs = dbSendQuery(con, query)
@@ -174,7 +178,7 @@ summarize_mc=function(mc_data_table){
 
 # ------------------ crop dist functions --------------------------#
 
-nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year, soil_para){
+nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year, soil_para, offset_tab){
 		
 		## subset the time series for the very first year
 		temp_ts=filter(nuts_base_ts, year==start_year) %>%
@@ -199,9 +203,11 @@ nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year, soil_para){
 				sample_n(., size=1, weight=prob, replace=F) %>%
 				select(., c(objectid, current_crop_id, year))
 
+
 		init_offset=left_join(init_crop, offset_tab, copy=T) %>%
 				select(., objectid, current_crop_id, offset_year) %>%
 				rename(., c("current_crop_id" = "follow_up_crop_id"))
+
 
 		# Set up the crop counter
 		crop_counter=select(init_crop, c(objectid, current_crop_id)) %>%
@@ -209,17 +215,19 @@ nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year, soil_para){
 				rename(., c("current_crop_id" = "follow_up_crop_id"))
 
 		temp=list(crop_dist=init_crop, crop_offset=init_offset, crop_counter=crop_counter)
+
 		return(temp)
 }
 
 # ------------------------------------- #
 
 nuts_crop_cont=function(current_year, current_crop_dat, nuts_base_probs, nuts_base_ts,
-						soil_para, follow_up_crop_para){
+						soil_para, follow_up_crop_para, offset_tab, max_tab){
 
 		## subset the time series for the very first year
 		temp_ts=filter(nuts_base_ts, year==current_year) %>%
 				rename(., c("crop_id"="follow_up_crop_id"))
+		
 
 		# get the single items from the list
 		current_crop_dist=current_crop_dat$crop_dist
@@ -227,7 +235,7 @@ nuts_crop_cont=function(current_year, current_crop_dat, nuts_base_probs, nuts_ba
 		crop_counter=current_crop_dat$crop_counter
 
 		## distribute the crops for the current year
-		temp_dist=inner_join(current_crop_dist, base_probs) %>%
+		temp_dist=inner_join(current_crop_dist, nuts_base_probs) %>%
  				select(., c(-current_soil_prob, -year)) %>%
 				# join the time series data
 				inner_join(., temp_ts, copy=T) %>%
@@ -299,14 +307,15 @@ nuts_crop_cont=function(current_year, current_crop_dat, nuts_base_probs, nuts_ba
 
 # ------------------------------------- #
 
-crop_distribution=function(nuts_base_probs, nuts_base_ts, years, soil_para, follow_up_crop_para){
-
+crop_distribution=function(nuts_base_probs, nuts_base_ts, years, soil_para,
+						   follow_up_crop_para, offset_tab, max_tab){
 		# initialize for the first year
 		current_year=years[1]
 		init_crop_dat=nuts_crop_init(nuts_base_probs=nuts_base_probs,
 									  nuts_base_ts=nuts_base_ts,
 									 start_year=current_year,
-									 soil_para=soil_para)
+									 soil_para=soil_para, 
+									 offset_tab=offset_tab)
 
 		# save the initialization
 		current_crop_dat=init_crop_dat
@@ -321,7 +330,9 @@ crop_distribution=function(nuts_base_probs, nuts_base_ts, years, soil_para, foll
 												nuts_base_probs=nuts_base_probs,
 												nuts_base_ts=nuts_base_ts,
 												soil_para=soil_para,
-												follow_up_crop_para=follow_up_crop_para)
+												follow_up_crop_para=follow_up_crop_para,
+												offset_tab=offset_tab,
+											   	max_tab=max_tab)
 
 				current_crop_dist=current_crop_dat$crop_dist
 		}

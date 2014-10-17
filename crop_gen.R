@@ -121,7 +121,7 @@ mpiwrapper = function() {
 						max_tab=as.data.table(lapply(max_tab, as.numeric))
 						
 						# -----------------------------------------------------------------------#
-						mc_runs=1
+						mc_runs=100
 						# -----------------------------------------------------------------------#
 
 
@@ -180,9 +180,8 @@ mpi.bcast.Robj2slave(nuts_info_all)
 
 # Create task list
 tasks = vector('list')
-# for (i in 1:nrow(nuts_info_all)) {
-for (i in 1:1) {
-    tasks[[i]] = list(id=90)
+for (i in 1:nrow(nuts_info_all)) {
+    tasks[[i]] = list(id=i)
 }
 
 # Send the function to the slaves

@@ -16,6 +16,6 @@ set -x
 #BSUB -a openmpi
 
 # Start R MPI job
-mpirun.lsf ./crop_gen.R
+mpirun.lsf Rscript ./crop_gen.R
 
 ######################################################################

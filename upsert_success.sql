@@ -2,7 +2,7 @@
 
 BEGIN;
 CREATE TEMPORARY TABLE 
- newvals (oid_nuts INTEGER, success_time TIMESTAMP WITH TIME ZONE, tmp_table TEXT, success BOOLEAN) ON COMMIT DROP;
+ newvals (oid_nuts INTEGER, success_time TIMESTAMP WITH TIME ZONE, tmp_table TEXT, success BOOLEAN);
 
 INSERT INTO newvals (oid_nuts, success_time, tmp_table, success) VALUES 
 				(?, ?, ?, ?);

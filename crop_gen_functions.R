@@ -86,8 +86,9 @@ upload_data=function(nuts_info, data, prefix) {
 
 		source('~/.rpostgres_ini.R')
 
-		tab_name=paste0(paste0(prefix, '_'), paste(c(as.character(nuts_info$id),
-													 as.character(nuts_info$max)), sep="_", collapse="_"))
+		tab_name=paste0(paste0(prefix, '_'),
+						paste(c(as.integer(as.character(nuts_info$id)),
+						as.integer(as.character(nuts_info$max))), sep="_", collapse="_"))
 
 		schema_name = 'tmp'
 		tab_name = toString(tab_name)

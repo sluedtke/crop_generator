@@ -174,8 +174,8 @@ executeSQLQuery=function(query, parameters, fetch=T) {
 			{
 				result<-sqlExecute(conn, query, parameters, fetch, errors=TRUE)
 			}, 
-			error=function(cond) {
-				stop(cond$message)
+			error=function(e) {
+				stop(e$message)
 			}, 
 			finally={
 				odbcClose(conn)

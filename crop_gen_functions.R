@@ -26,10 +26,8 @@
 nuts=function(){
 		query=readLines("./nuts_version.sql")
 		query=paste(query, collapse=" \n ")
-        conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
-		nuts_version=sqlExecute(conn, query, fetch=T)
-		odbcClose(conn)
-		return(nuts_version)
+		nuts_version=executeSQLQuery(query, NULL);
+        return(nuts_version)
 }
 
 # ------------------------------------- #
@@ -40,9 +38,7 @@ nuts_probs=function(nuts_info){
 		query=gsub("XXXX", nuts_info$max, query)
 
 		parameters=data.frame(a=nuts_info$nuts_code, b=nuts_info$nuts_code)
-        conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
-		nuts_probs=sqlExecute(conn, query, parameters,  fetch=T)
-		odbcClose(conn)
+		nuts_probs=executeSQLQuery(query, parameters)
 		return(nuts_probs)
 }
 
@@ -51,9 +47,7 @@ nuts_probs=function(nuts_info){
 nuts_ts=function(nuts_id){
 		query=readLines("./time_series.sql")
 		query=paste(query, collapse=" \n ")
-        conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
-		nuts_ts=sqlExecute(conn, query, nuts_id,  fetch=T)
-		odbcClose(conn)
+		nuts_ts=executeSQLQuery(query, nuts_id)
 		return(nuts_ts)
 }
 
@@ -61,9 +55,7 @@ nuts_ts=function(nuts_id){
 
 offset_year=function(){
 		query=paste0('SELECT * FROM data.crop_offset_year;')
-        conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
-		offset_tab=sqlExecute(conn, query, NULL, fetch=T)
-		odbcClose(conn)
+		offset_tab=executeSQLQuery(query, NULL)
 		return(offset_tab)
 }
 
@@ -71,9 +63,7 @@ offset_year=function(){
 
 max_year=function(){
 		query=paste0('SELECT * FROM data.crop_max_year;')
-        conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
-		max_tab=sqlExecute(conn, query, NULL, fetch=T)
-		odbcClose(conn)
+		max_tab=executeSQLQuery(query, NULL)
 		return(max_tab)
 }
 # ------------------------------------- #
@@ -116,9 +106,7 @@ nuts_success=function(nuts_info, tab_name, success){
 
 		query=readLines("./upsert_success.sql")
 		query=paste(query, collapse=" \n ")
-        conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
-		nuts_ts=sqlExecute(conn, query, success_tab, fetch=F)
-		odbcClose(conn)
+		nuts_ts=executeSQLQuery(query, success_tab, fetch=F)
 		return()
 }
 
@@ -175,6 +163,25 @@ summarize_mc=function(mc_data_table){
 				sample_n(., size=1)
 
 		return(temp)
+}
+
+# ------------------------------------- #
+
+# Wrapper function to call sqlExecute.
+executeSQLQuery=function(query, parameters, fetch=T) {
+		conn=odbcConnect("crop_generator", uid="sluedtke", case="postgresql")
+		tryCatch(
+			{
+				result<-sqlExecute(conn, query, parameters, fetch, errors=TRUE)
+			}, 
+			error=function(cond) {
+				stop(cond$message)
+			}, 
+			finally={
+				odbcClose(conn)
+			}
+		) 
+		return(result)
 }
 
 # ------------------ crop dist functions --------------------------#

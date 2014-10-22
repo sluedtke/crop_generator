@@ -85,7 +85,6 @@ mpiwrapper = function() {
 
 						nuts_info=as.data.frame(t(nuts_info_all[id,]))
 
-
 						# And the crops and their minimum offset 
 						offset_tab=offset_year()
 
@@ -142,7 +141,7 @@ mpiwrapper = function() {
 								mc_temp=summarize_mc(mc_temp)
 
 								# joining the unique identifier from the postgres table
-								mc_temp$oid_nuts=nuts_info$id
+								mc_temp$oid_nuts=nuts_info$oid_nuts
 
 								# upload the features to the DB
 								upload_data(nuts_info, data=mc_temp, prefix="stat")

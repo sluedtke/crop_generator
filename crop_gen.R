@@ -141,7 +141,7 @@ mpiwrapper = function() {
 								mc_temp=summarize_mc(mc_temp)
 
 								# joining the unique identifier from the postgres table
-								mc_temp$oid_nuts=nuts_info$oid_nuts
+								mc_temp$oid_nuts=as.integer(as.character(nuts_info$oid_nuts))
 
 								# upload the features to the DB
 								upload_data(nuts_info, data=mc_temp, prefix="stat")

@@ -6,6 +6,7 @@
 -- get the relevant nuts that occur in the time series
 WITH  dn AS(
 SELECT DISTINCT ON (nuts_code)
+ nuts_code,
  oid_nuts,
  nuts_version_year AS version
 FROM data.nuts_version_years
@@ -13,6 +14,7 @@ ORDER BY nuts_code, nuts_version_year DESC
 )
 
 SELECT DISTINCT ON (nuts_id)
+ dn.nuts_code,
  dn.oid_nuts,
  dn.version
 FROM

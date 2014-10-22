@@ -4,9 +4,19 @@
 -- That will be the reference table for the time series.
 
 -- get the relevant nuts that occur in the time series
+WITH  dn AS(
+SELECT DISTINCT ON (nuts_code)
+ oid_nuts,
+ nuts_version_year AS version
+FROM data.nuts_version_years
+ORDER BY nuts_code, nuts_version_year DESC
+)
+
 SELECT DISTINCT ON (nuts_id)
- nuts_id, 
- oid_nuts
+ dn.oid_nuts,
+ dn.version
 FROM
  data.time_series
+INNER JOIN dn ON 
+dn.oid_nuts=data.time_series.oid_nuts
 

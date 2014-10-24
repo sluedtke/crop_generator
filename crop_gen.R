@@ -124,7 +124,7 @@ mpiwrapper = function() {
 						# Some nuts unit are not covered by the EU-refgrid, the have 0 rows in the base_probs tab
 						# we check for that and break the loop if that is the case
 						if(nrow(nuts_base_probs)==0){
-								cat("Nuts unit not covered by the EU-RefGrid \n")
+								mc_temp="Nuts unit not covered by the EU-RefGrid"
 						}else{
 
 								mc_temp=crop_distribution(nuts_base_probs=nuts_base_probs, nuts_base_ts=ts_data,
@@ -225,7 +225,7 @@ while (closed_slaves < n_slaves) {
 				# The message contains results. Do something with the results. 
 				# Store them in the data structure
 				id = message$id
-				result[id] = message$result
+				result[[id]] = message$result
 		} 
 		else if (tag == 3) { 
 				# A slave has closed down. 

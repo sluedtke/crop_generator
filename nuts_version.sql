@@ -28,6 +28,8 @@ INNER JOIN dn ON
 dn.oid_nuts=data.time_series.oid_nuts
 LEFT OUTER JOIN nuts_done ON 
 data.time_series.oid_nuts=nuts_done.oid_nuts
-WHERE nuts_done.oid_nuts IS NULL;
+WHERE nuts_done.oid_nuts IS NULL 
+AND 
+value IS NOT NULL;
 
 

@@ -11,6 +11,11 @@ SELECT DISTINCT ON (nuts_code)
  nuts_version_year AS version
 FROM data.nuts_version_years
 ORDER BY nuts_code, nuts_version_year DESC
+), 
+nuts_done AS(
+SELECT DISTINCT oid_nuts
+FROM 
+results.nuts_completed
 )
 
 SELECT DISTINCT ON (nuts_id)
@@ -21,4 +26,10 @@ FROM
  data.time_series
 INNER JOIN dn ON 
 dn.oid_nuts=data.time_series.oid_nuts
+LEFT OUTER JOIN nuts_done ON 
+data.time_series.oid_nuts=nuts_done.oid_nuts
+WHERE nuts_done.oid_nuts IS NULL 
+AND 
+value IS NOT NULL;
+
 

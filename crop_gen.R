@@ -119,34 +119,27 @@ mpiwrapper = function() {
 						max_tab=as.data.table(lapply(max_tab, as.numeric))
 						
 						# -----------------------------------------------------------------------#
-						mc_runs=100
-						# -----------------------------------------------------------------------#
 
 
 						# Some nuts unit are not covered by the EU-refgrid, the have 0 rows in the base_probs tab
 						# we check for that and break the loop if that is the case
 						if(nrow(nuts_base_probs)==0){
-								cat("Nuts unit not covered by the EU-RefGrid \n")
+								mc_temp="Nuts unit not covered by the EU-RefGrid"
 						}else{
-								mc_temp=foreach(run=seq_len(mc_runs), .combine="rbind")%do%{
 
-										temp=crop_distribution(nuts_base_probs=nuts_base_probs, nuts_base_ts=ts_data,
-															   years=years, soil_para=1, follow_up_crop_para=1,
-															   offset_tab=offset_tab, max_tab=max_tab)
-										temp$mc_run=factor(run)
-										temp=temp
-								}
-
-								# summarize the mc runs
-								mc_temp=summarize_mc(mc_temp)
+								mc_temp=crop_distribution(nuts_base_probs=nuts_base_probs, nuts_base_ts=ts_data,
+														  years=years, soil_para=1, follow_up_crop_para=1,
+														  offset_tab=offset_tab, max_tab=max_tab)
 
 								# joining the unique identifier from the postgres table
 								mc_temp$oid_nuts=as.integer(as.character(nuts_info$oid_nuts))
+								mc_temp$prob=as.integer(1)
 
 								# upload the features to the DB
 								upload_data(nuts_info, data=mc_temp, prefix="stat")
 
 						}
+
 						# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 						# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 						# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -166,6 +159,9 @@ mpiwrapper = function() {
 		}
 		mpi.send.Robj(junk, 0, 3)
 }
+
+# Disable idx on results table
+drop_index_crop_gen_stat()
 
 ## Get the list of nuts we want to use
 nuts_info_all=nuts()
@@ -232,13 +228,16 @@ while (closed_slaves < n_slaves) {
 				# The message contains results. Do something with the results. 
 				# Store them in the data structure
 				id = message$id
-				result[id] = message$result
+				result[[id]] = message$result
 		} 
 		else if (tag == 3) { 
 				# A slave has closed down. 
 				closed_slaves=closed_slaves + 1 
 		} 
 } 
+
+# Create index on results table
+create_index_crop_gen_stat()
 
 print(result)
 

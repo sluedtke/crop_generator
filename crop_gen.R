@@ -241,6 +241,8 @@ while (closed_slaves < n_slaves) {
 		} 
 } 
 
+create_index_crop_gen_stat()
+
 print(result)
 
 mpi.close.Rslaves()

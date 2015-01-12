@@ -97,6 +97,14 @@ upload_data=function(nuts_info, data, prefix) {
 
 }
 
+create_index_crop_gen_stat =function(){
+	query=readLines("./create_index_crop_gen_stat.sql")
+	query=paste(query, collapse=" \n ")
+	crop_gen_stat_index=executeSQLQuery(query, NULL);
+        return(crop_gen_stat_index)
+}
+
+
 # ------------------------------------- #
 nuts_success=function(nuts_info, tab_name, success){
 
@@ -174,8 +182,8 @@ executeSQLQuery=function(query, parameters, fetch=T) {
 			{
 				result<-sqlExecute(conn, query, parameters, fetch, errors=TRUE)
 			}, 
-			error=function(e) {
-				stop(e$message)
+			error=function(cond) {
+				stop(cond$message)
 			}, 
 			finally={
 				odbcClose(conn)

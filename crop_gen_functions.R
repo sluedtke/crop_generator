@@ -97,6 +97,20 @@ upload_data=function(nuts_info, data, prefix) {
 
 }
 
+create_index_crop_gen_stat =function(){
+	query=readLines("./create_index_crop_gen_stat.sql")
+	query=paste(query, collapse=" \n ")
+	crop_gen_stat_index=executeSQLQuery(query, NULL);
+        return(crop_gen_stat_index)
+}
+
+drop_index_crop_gen_stat =function(){
+	query=readLines("./drop_index_crop_gen_stat.sql")
+	query=paste(query, collapse=" \n ")
+	crop_gen_stat_index=executeSQLQuery(query, NULL);
+        return(crop_gen_stat_index)
+}
+
 # ------------------------------------- #
 nuts_success=function(nuts_info, tab_name, success){
 

@@ -35,7 +35,7 @@ nuts=function(){
 nuts_probs=function(nuts_info){
 		query=readLines("./probability.sql")
 		query=paste(query, collapse=" \n ")
-		query=gsub("XXXX", nuts_info$max, query)
+		query=gsub("XXXX", nuts_info$version, query)
 
 		parameters=data.frame(a=nuts_info$nuts_code, b=nuts_info$nuts_code)
 		nuts_probs=executeSQLQuery(query, parameters)
@@ -77,8 +77,8 @@ upload_data=function(nuts_info, data, prefix) {
 		source('~/.rpostgres_ini.R')
 
 		tab_name=paste0(paste0(prefix, '_'),
-						paste(c(as.integer(as.character(nuts_info$id)),
-						as.integer(as.character(nuts_info$max))), sep="_", collapse="_"))
+						paste(c(as.integer(as.character(nuts_info$oid_nuts)),
+						as.integer(as.character(nuts_info$version))), sep="_", collapse="_"))
 
 		schema_name = 'tmp'
 		tab_name = toString(tab_name)
@@ -100,7 +100,7 @@ upload_data=function(nuts_info, data, prefix) {
 # ------------------------------------- #
 nuts_success=function(nuts_info, tab_name, success){
 
-		success_tab=data.frame(oid_nuts=nuts_info$id,
+		success_tab=data.frame(oid_nuts=nuts_info$oid_nuts,
 							   success_time=as.character(Sys.time()),
 							   tmp_table=tab_name, success=success)
 

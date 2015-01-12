@@ -167,6 +167,9 @@ mpiwrapper = function() {
 		mpi.send.Robj(junk, 0, 3)
 }
 
+# Disable idx on results table
+drop_index_crop_gen_stat()
+
 ## Get the list of nuts we want to use
 nuts_info_all=nuts()
 
@@ -241,6 +244,7 @@ while (closed_slaves < n_slaves) {
 		} 
 } 
 
+# Create index on results table
 create_index_crop_gen_stat()
 
 print(result)

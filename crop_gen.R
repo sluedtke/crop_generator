@@ -90,8 +90,8 @@ mpiwrapper = function() {
 
 						# And the crops and their maximum continuous occurrence 
 						max_tab=max_year() %>%
-								rename(., c("current_crop_id" = "follow_up_crop_id")) %>%
-								rename(., c("offset_year" = "max_seq_year"))
+								rename(., follow_up_crop_id = current_crop_id) %>%
+								rename(., max_seq_year = offset_year) 
 
 						ts_data=nuts_ts(nuts_id=nuts_info$nuts_code) %>%
 								mutate(., value=as.numeric(as.character(value)))

@@ -204,7 +204,7 @@ nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year, soil_para, of
 		
 		## subset the time series for the very first year
 		temp_ts=filter(nuts_base_ts, year==start_year) %>%
-				rename(., c("crop_id"="current_crop_id"))
+				rename(., current_crop_id = crop_id )
 
 		## distribute the crops for the first year
 		init_crop=subset(nuts_base_probs, nuts_base_probs$current_crop_id %in% temp_ts$current_crop_id) %>%
@@ -228,13 +228,13 @@ nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year, soil_para, of
 
 		init_offset=left_join(init_crop, offset_tab, copy=T) %>%
 				select(., objectid, current_crop_id, offset_year) %>%
-				rename(., c("current_crop_id" = "follow_up_crop_id"))
+				rename(., follow_up_crop_id = current_crop_id)
 
 
 		# Set up the crop counter
 		crop_counter=select(init_crop, c(objectid, current_crop_id)) %>%
 				mutate(counter=1) %>%
-				rename(., c("current_crop_id" = "follow_up_crop_id"))
+				rename(., follow_up_crop_id = current_crop_id) 
 
 		temp=list(crop_dist=init_crop, crop_offset=init_offset, crop_counter=crop_counter)
 
@@ -248,7 +248,7 @@ nuts_crop_cont=function(current_year, current_crop_dat, nuts_base_probs, nuts_ba
 
 		## subset the time series for the very first year
 		temp_ts=filter(nuts_base_ts, year==current_year) %>%
-				rename(., c("crop_id"="follow_up_crop_id"))
+				rename(., follow_up_crop_id = crop_id)
 		
 
 		# get the single items from the list
@@ -306,16 +306,16 @@ nuts_crop_cont=function(current_year, current_crop_dat, nuts_base_probs, nuts_ba
 		# if not, set the counter to 0
 				mutate_if(., current_crop_id!=follow_up_crop_id, counter=0) %>%
 				select(., c(objectid, follow_up_crop_id, counter)) %>%
-				rename(., c("follow_up_crop_id"="current_crop_id")) 
+				rename(., current_crop_id = follow_up_crop_id) 
 				
 				# select columns of interest
 		temp_dist=select(temp_dist, c(follow_up_crop_id, objectid, year)) %>%
-				rename(., c("follow_up_crop_id"="current_crop_id"))
+				rename(., current_crop_id = follow_up_crop_id)
 
 		# get the most recent cells and crops that must have a break
 		current_crop_offset=left_join(temp_dist, offset_tab, copy=T) %>%
 				select(., objectid, current_crop_id, offset_year) %>%
-				rename(., c("current_crop_id" = "follow_up_crop_id")) %>%
+				rename(., follow_up_crop_id = current_crop_id) %>%
 				rbind(., crop_offset=mutate(crop_offset, offset_year=offset_year-1)) %>%
 				filter(., is.na(offset_year)==F ) %>%
 				filter(., offset_year!=0 )
@@ -361,7 +361,7 @@ crop_distribution=function(nuts_base_probs, nuts_base_ts, years, soil_para,
 
 		# combine with the initialization
 		temp=rbind(init_crop_dat$crop_dist, temp, use.names=T) %>%
-				rename(., c("current_crop_id"="crop_id"))
+				rename(., crop_id = current_crop_id)
 
 		return(temp)
 		

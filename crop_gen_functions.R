@@ -207,11 +207,11 @@ nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year, soil_para, of
 				rename(., current_crop_id = crop_id )
 
 		## distribute the crops for the first year
-		init_crop=subset(nuts_base_probs, nuts_base_probs$current_crop_id %in% temp_ts$current_crop_id) %>%
-				select(., c(objectid, current_crop_id, current_soil_prob)) %>%
+		init_crop=join(nuts_base_probs, temp_ts) %>%
+				select(., year, objectid, current_crop_id, current_soil_prob, value) %>%
 				unique(., by=c("objectid", "current_crop_id")) %>%
 				group_by(., objectid) %>%
-				inner_join(., temp_ts, copy=T) %>%
+				# inner_join(., temp_ts, copy=T) %>%
 
 				# rescale the follow up crop probs
 				mutate(., value=rescale_probs(value)) %>%
@@ -221,9 +221,10 @@ nuts_crop_init=function(nuts_base_probs, nuts_base_ts, start_year, soil_para, of
 				mutate(., current_soil_prob=soil_para_call(current_soil_prob, soil_para)) %>%
 
 				# get the joint probability  and rescale
-				mutate(., prob=rescale_probs(current_soil_prob*value)) %>%
-				sample_n(., size=1, weight=prob, replace=F) %>%
-				select(., c(objectid, current_crop_id, year))
+                mutate(., prob=rescale_probs(current_soil_prob*value)) %>%
+                sample_n(., size=1) %>%
+				# sample_n(., size=1, weight=prob, replace=F) %>%
+                select(., objectid, current_crop_id, year)
 
 
 		init_offset=left_join(init_crop, offset_tab, copy=T) %>%
@@ -297,7 +298,8 @@ nuts_crop_cont=function(current_year, current_crop_dat, nuts_base_probs, nuts_ba
 				mutate(., prob=rescale_probs(follow_up_crop_prob*follow_up_soil_prob*value)) %>%
 		
 				# draw
-				sample_n(., size=1, weight=prob, replace=F)
+				sample_n(., size=1)
+				# sample_n(., size=1, weight=prob, replace=F)
 
 		# Update the crop counter
 		crop_counter=select(temp_dist, c(objectid, current_crop_id, follow_up_crop_id, counter)) %>%

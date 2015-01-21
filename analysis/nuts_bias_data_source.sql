@@ -4,7 +4,6 @@ crops_per_year AS (
 	SELECT crop_id, COUNT(crop_id) AS crop, year, results.crop_gen_stat.oid_nuts, data.nuts_version_years.id, data.nuts_version_years.nuts_code
 	FROM results.crop_gen_stat INNER JOIN data.nuts_version_years 
 	ON data.nuts_version_years.oid_nuts=results.crop_gen_stat.oid_nuts
-       	WHERE nuts_version_years.nuts_code LIKE 'AT%'	
 	GROUP BY year, results.crop_gen_stat.oid_nuts, crop_id, data.nuts_version_years.id, nuts_version_years.nuts_code
 	ORDER BY year 
 ),   

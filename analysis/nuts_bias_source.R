@@ -12,11 +12,15 @@ library(data.table)
 library(dplyr)
 
 # Query the database
-query=readLines("./nuts_bias_data_source.sql")
-print(query)
-query=paste(query, collapse=" \n ")
 conn=odbcConnect("crop_generator", uid="richard", case="postgresql")
+query=readLines("./nuts_bias_data_source.sql")
+query=paste(query, collapse=" \n ")
 bias_source=sqlExecute(conn, query, NULL, fetch=T)
+
+query <- readLines("./time_series.sql")
+query <- paste(query, collapse=" \n ")
+time_series <- sqlExecute(conn, query, NULL, fetch=T)
+
 odbcClose(conn)
 
 # Calculate mean/median by year, (country)name, data_source, and nuts_id
@@ -40,8 +44,8 @@ setnames(mean_bias_per_year, "V1", "mean")
 mean_year_15 <- mean_bias_per_year[abs(mean_bias_per_year$mean)>=15,]
 
 # Plot nuts grouped by countries with abs(mena(pbias))>=15
-ggplot(data=mean_year_15, aes(x=nuts_id, y=mean, fill=data_source)) + 
-	geom_bar(stat="identity", width=.7, position='dodge') + 
+ggplot(data=mean_year_15, aes(x=nuts_id, y=mean)) + 
+	geom_bar(stat="identity", width=.7, position='dodge', fill="darkcyan") + 
 	xlab("nuts_id") + 
 	ylab("pbias") + 
 	ggtitle("avg(pbias) of nuts with abs(mean(pbias)) >=15" ) + 
@@ -69,6 +73,8 @@ ggplot(data=country_year, mapping=aes(x=year, y=mean, ymin=min, ymax=max)) +
  	facet_wrap( ~ name, scales="free", ncol=2)
 ggsave(file="pbias_countries.png", width=36, height=40)
 
+time_series_15 <- time_series[time_series$nuts_id %in% mean_year_15$nuts_id, ]
+
 # Create plots per country...
 countries <- unique(bias_nuts_year$name)
 for (c in countries) {
@@ -94,13 +100,13 @@ for (c in countries) {
 	if (dim(nuts_15)[1] > 0) {
 		ggplot(data=nuts_15, mapping=aes(x=year, y=mean, ymin=min, ymax=max)) + 
 			geom_pointrange(aes(col = factor(data_source), shape=factor(data_source), linetype=factor(mean_threshold)), position=position_dodge(width=0.7)) + 
- 			xlab("nuts_id") +
- 			ylab("pbias") + 
- 			ggtitle(title) + 
- 			coord_cartesian(ylim=c(-50, 100)) + 
- 			facet_wrap( ~ nuts_id, scales="free", ncol=2)
- 		filename <- paste("pbias_nuts_mean_15_", c, ".png", sep="")
- 		ggsave(file=filename, width=36, height=40)
+			 xlab("nuts_id") +
+			 ylab("pbias") + 
+			 ggtitle(title) + 
+			 coord_cartesian(ylim=c(-50, 100)) + 
+			 facet_wrap( ~ nuts_id, scales="free", ncol=2)
+		 filename <- paste("pbias_nuts_mean_15_", c, ".png", sep="")
+		 ggsave(file=filename, width=36, height=40)
 	}
 
 	# plot yearly median of nuts with abs(mean(pbias))>=15
@@ -144,7 +150,17 @@ for (c in countries) {
 		facet_wrap( ~ nuts_id, scales="free", ncol=3)
 	ggsave(file=filename, width=36, height=49)
 
-	
+	ts_nuts_15 <- time_series_15[time_series_15$name==c, ]
+	root_crops <- c(7, 9, 14)
+	ts_nuts_15$root_crops <- ifelse(ts_nuts_15$crop_id %in% root_crops, "root crop", "non root crop")
+	if (dim(ts_nuts_15)[1] > 0) {
+		filename <- paste("ts_boxplot_", c, ".png", sep="")
+		ggplot(data=ts_nuts_15, aes(x=factor(crop_short), y=value)) +
+			geom_boxplot(aes(colour=factor(root_crops))) +
+			ggtitle("boxplot of values of crops per nuts region with abs(mean(pbias))>=15") +
+			facet_wrap(~ nuts_id, scales="free", ncol=3)
+		ggsave(file=filename, width=36, height=49)
+	}
 }
 
 

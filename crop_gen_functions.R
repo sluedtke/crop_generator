@@ -269,7 +269,7 @@ nuts_crop_cont=function(current_year, current_crop_dat, nuts_base_probs, nuts_ba
 				# join the offset info
 				left_join(crop_offset, copy=T) %>%
 				# update the probs if offset_year is present
-				mutate_if(., is.na(offset_year)==F, follow_up_crop_prob=0.01) %>%
+				mutate_if(., is.na(offset_year)==F, follow_up_crop_prob=0.1) %>%
 
 				left_join(crop_counter, copy=T) %>%
 				left_join(max_tab, copy=T) %>%
@@ -279,7 +279,7 @@ nuts_crop_cont=function(current_year, current_crop_dat, nuts_base_probs, nuts_ba
 
 				# update the probs if the  difference between the counter and the maximum
 				# of follow up years from the table is greater than 0
-				mutate_if(., (temp>=0), follow_up_crop_prob=0.01) %>%
+				mutate_if(., (temp>=0), follow_up_crop_prob=0.1) %>%
 				
 				# building groups per pixel
 				group_by(., objectid) %>%

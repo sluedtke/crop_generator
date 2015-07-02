@@ -8,18 +8,21 @@ WITH  dn AS(
 SELECT DISTINCT ON (nuts_code)
  nuts_code,
  oid_nuts,
- nuts_version_year AS version
-FROM data.nuts_version_years
-ORDER BY nuts_code, nuts_version_year DESC
-), 
+ year AS version
+FROM data.nuts 
+  WHERE parent_id IS NOT NULL
+ORDER BY  nuts_code, year DESC
+),
+
+-- query processed nuts 
 nuts_done AS(
 SELECT DISTINCT oid_nuts
 FROM 
 results.nuts_completed
 )
 
-SELECT DISTINCT ON (nuts_id)
- dn.nuts_code,
+--  check which nuts 
+SELECT DISTINCT ON (oid_nuts)
  dn.oid_nuts,
  dn.version
 FROM
@@ -31,5 +34,4 @@ data.time_series.oid_nuts=nuts_done.oid_nuts
 WHERE nuts_done.oid_nuts IS NULL 
 AND 
 value IS NOT NULL;
-
 
